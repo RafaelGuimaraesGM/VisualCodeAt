@@ -1,0 +1,19 @@
+body {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 400px;
+    background-color: black;
+    color: white;
+}
+
+#telaJogo {
+    display: block;
+    border: 2px solid #00ffff;
+    box-shadow: 0 0 15px #00ffff;
+    max-width: 100vw;
+    max-height: 99vh;
+}

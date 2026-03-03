@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuizShow</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="CSS/style.css">
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>❓</text></svg>">
+  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+  <script type="text/javascript"></script>
+</head>
+
+<body>
+
+  <header class="text-center py-4 mb-5">
+    <div class="title">
+      <h1>QuizShow</h1>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="row g-4">
+
+
+      <div class="col-12 col-md-6 col-lg-4">
+        <div class="quiz-card p-4 h-100">
+          <p class="question-text">Quem é o autor de Memórias Póstumas de Brás Cubas?</p>
+          <div class="btn-group-vertical w-100" role="group">
+            <input type="radio" class="btn-check" name="pergunta1" id="p1a" value="a" checked><label
+              class="btn btn-outline-dark text-start" for="p1a">A) José de Alencar</label>
+            <input type="radio" class="btn-check" name="pergunta1" id="p1b" value="b"><label
+              class="btn btn-outline-dark text-start" for="p1b">B) Machado de Assis</label>
+            <input type="radio" class="btn-check" name="pergunta1" id="p1c" value="c"><label
+              class="btn btn-outline-dark text-start" for="p1c">C) Lima Barreto</label>
+            <input type="radio" class="btn-check" name="pergunta1" id="p1d" value="d"><label
+              class="btn btn-outline-dark text-start" for="p1d">D) Graciliano Ramos</label>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="col-12 col-md-6 col-lg-4">
+        <div class="quiz-card p-4 h-100">
+          <p class="question-text">Qual dramaturgo é considerado o maior escritor da língua inglesa e autor de Hamlet?
+          </p>
+          <div class="btn-group-vertical w-100" role="group">
+            <input type="radio" class="btn-check" name="pergunta2" id="p2a" value="a" checked><label
+              class="btn btn-outline-dark text-start" for="p2a">A) Charles Dickens</label>
+            <input type="radio" class="btn-check" name="pergunta2" id="p2b" value="b"><label
+              class="btn btn-outline-dark text-start" for="p2b">B) William Shakespeare</label>
+            <input type="radio" class="btn-check" name="pergunta2" id="p2c" value="c"><label
+              class="btn btn-outline-dark text-start" for="p2c">C) Oscar Wilde</label>
+            <input type="radio" class="btn-check" name="pergunta2" id="p2d" value="d"><label
+              class="btn btn-outline-dark text-start" for="p2d">D) George Bernard Shaw</label>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="col-12 col-md-6 col-lg-4">
+        <div class="quiz-card p-4 h-100">
+          <p class="question-text">Quem é o autor do poema Os Lusíadas, obra épica da literatura portuguesa?</p>
+          <div class="btn-group-vertical w-100" role="group">
+            <input type="radio" class="btn-check" name="pergunta3" id="p3a" value="a" checked><label
+              class="btn btn-outline-dark text-start" for="p3a">A) Fernando Pessoa</label>
+            <input type="radio" class="btn-check" name="pergunta3" id="p3b" value="b"><label
+              class="btn btn-outline-dark text-start" for="p3b">B) Luís de Camões</label>
+            <input type="radio" class="btn-check" name="pergunta3" id="p3c" value="c"><label
+              class="btn btn-outline-dark text-start" for="p3c">C) Eça de Queiros</label>
+            <input type="radio" class="btn-check" name="pergunta3" id="p3d" value="d"><label
+              class="btn btn-outline-dark text-start" for="p3d">D) Gil Vicente</label>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="col-12 col-md-6 col-lg-4">
+        <div class="quiz-card p-4 h-100">
+          <p class="question-text">Quem foi o primeiro astronauta que pisou na lua?</p>
+          <div class="btn-group-vertical w-100" role="group">
+            <input type="radio" class="btn-check" name="pergunta4" id="p4a" value="a" checked><label
+              class="btn btn-outline-dark text-start" for="p4a">A) Buzz Aldrin</label>
+            <input type="radio" class="btn-check" name="pergunta4" id="p4b" value="b"><label
+              class="btn btn-outline-dark text-start" for="p4b">B) Neil Armstrong</label>
+            <input type="radio" class="btn-check" name="pergunta4" id="p4c" value="c"><label
+              class="btn btn-outline-dark text-start" for="p4c">C) Oscar Wilde</label>
+            <input type="radio" class="btn-check" name="pergunta4" id="p4d" value="d"><label
+              class="btn btn-outline-dark text-start" for="p4d">D) Graciliano Ramos</label>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="col-12 col-md-6 col-lg-4">
+        <div class="quiz-card p-4 h-100">
+          <p class="question-text">Quem foi a primeira pessoa a viajar no Espaço?</p>
+          <div class="btn-group-vertical w-100" role="group">
+            <input type="radio" class="btn-check" name="pergunta5" id="p5a" value="a" checked><label
+              class="btn btn-outline-dark text-start" for="p5a">A) Yuri Gagarin</label>
+            <input type="radio" class="btn-check" name="pergunta5" id="p5b" value="b"><label
+              class="btn btn-outline-dark text-start" for="p5b">B) A cadela Laika</label>
+            <input type="radio" class="btn-check" name="pergunta5" id="p5c" value="c"><label
+              class="btn btn-outline-dark text-start" for="p5c">C) Neil Armstrong</label>
+            <input type="radio" class="btn-check" name="pergunta5" id="p5d" value="d"><label
+              class="btn btn-outline-dark text-start" for="p5d">D) Marcos Pontes</label>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="col-12 col-md-6 col-lg-4">
+        <div class="quiz-card p-4 h-100">
+          <p class="question-text">Um anel tem 3 pedras preciosas. Quantas pedras preciosas têm 11 anéis?</p>
+          <div class="btn-group-vertical w-100" role="group">
+            <input type="radio" class="btn-check" name="pergunta6" id="p6a" value="a" checked><label
+              class="btn btn-outline-dark text-start" for="p6a">A) 110</label>
+            <input type="radio" class="btn-check" name="pergunta6" id="p6b" value="b"><label
+              class="btn btn-outline-dark text-start" for="p6b">B) 333</label>
+            <input type="radio" class="btn-check" name="pergunta6" id="p6c" value="c"><label
+              class="btn btn-outline-dark text-start" for="p6c">C) 33</label>
+            <input type="radio" class="btn-check" name="pergunta6" id="p6d" value="d"><label
+              class="btn btn-outline-dark text-start" for="p6d">D) 30</label>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="col-12 col-md-6 col-lg-4">
+        <div class="quiz-card p-4 h-100">
+          <p class="question-text">Qual o país tem a maior população do mundo?</p>
+          <div class="btn-group-vertical w-100" role="group">
+            <input type="radio" class="btn-check" name="pergunta7" id="p7a" value="a" checked><label
+              class="btn btn-outline-dark text-start" for="p7a">A) Índia</label>
+            <input type="radio" class="btn-check" name="pergunta7" id="p7b" value="b"><label
+              class="btn btn-outline-dark text-start" for="p7b">B) China</label>
+            <input type="radio" class="btn-check" name="pergunta7" id="p7c" value="c"><label
+              class="btn btn-outline-dark text-start" for="p7c">C) Estados Unidos</label>
+            <input type="radio" class="btn-check" name="pergunta7" id="p7d" value="d"><label
+              class="btn btn-outline-dark text-start" for="p7d">D) Indonésia</label>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="col-12 col-md-6 col-lg-4">
+        <div class="quiz-card p-4 h-100">
+          <p class="question-text">Qual é o maior rio do mundo em extensão?</p>
+          <div class="btn-group-vertical w-100" role="group">
+            <input type="radio" class="btn-check" name="pergunta8" id="p8a" value="a" checked><label
+              class="btn btn-outline-dark text-start" for="p8a">A) Nilo</label>
+            <input type="radio" class="btn-check" name="pergunta8" id="p8b" value="b"><label
+              class="btn btn-outline-dark text-start" for="p8b">B) Amazonas</label>
+            <input type="radio" class="btn-check" name="pergunta8" id="p8c" value="c"><label
+              class="btn btn-outline-dark text-start" for="p8c">C) Yangtzé</label>
+            <input type="radio" class="btn-check" name="pergunta8" id="p8d" value="d"><label
+              class="btn btn-outline-dark text-start" for="p8d">D) Mississipi</label>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="col-12 col-md-6 col-lg-4">
+        <div class="quiz-card p-4 h-100">
+          <p class="question-text">Qual é o país mais chuvoso do mundo?</p>
+          <div class="btn-group-vertical w-100" role="group">
+            <input type="radio" class="btn-check" name="pergunta9" id="p9a" value="a" checked><label
+              class="btn btn-outline-dark text-start" for="p9a">A) Brasil</label>
+            <input type="radio" class="btn-check" name="pergunta9" id="p9b" value="b"><label
+              class="btn btn-outline-dark text-start" for="p9b">B) Inglaterra</label>
+            <input type="radio" class="btn-check" name="pergunta9" id="p9c" value="c"><label
+              class="btn btn-outline-dark text-start" for="p9c">C) Colômbia</label>
+            <input type="radio" class="btn-check" name="pergunta9" id="p9d" value="d"><label
+              class="btn btn-outline-dark text-start" for="p9d">D) Indonésia</label>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="col-12 col-md-6 col-lg-4">
+        <div class="quiz-card p-4 h-100">
+          <p class="question-text">Qual cientista renascentista defendeu a teoria heliocêntrica?</p>
+          <div class="btn-group-vertical w-100" role="group">
+            <input type="radio" class="btn-check" name="pergunta10" id="p10a" value="a" checked><label
+              class="btn btn-outline-dark text-start" for="p10a">A) Galileu Galilei</label>
+            <input type="radio" class="btn-check" name="pergunta10" id="p10b" value="b"><label
+              class="btn btn-outline-dark text-start" for="p10b">B) Nicolau Copérnico</label>
+            <input type="radio" class="btn-check" name="pergunta10" id="p10c" value="c"><label
+              class="btn btn-outline-dark text-start" for="p10c">C) Isaac Newton</label>
+            <input type="radio" class="btn-check" name="pergunta10" id="p10d" value="d"><label
+              class="btn btn-outline-dark text-start" for="p10d">D) Johannes Kepler</label>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="col-12 col-md-6 col-lg-4">
+        <div class="quiz-card p-4 h-100">
+          <p class="question-text">Qual destas obras não pertence ao período renascentista?</p>
+          <div class="btn-group-vertical w-100" role="group">
+            <input type="radio" class="btn-check" name="pergunta11" id="p11a" value="a" checked><label
+              class="btn btn-outline-dark text-start" for="p11a">A) A Escola de Atenas - Rafael Sanzio</label>
+            <input type="radio" class="btn-check" name="pergunta11" id="p11b" value="b"><label
+              class="btn btn-outline-dark text-start" for="p11b">B) O Nascimento de Vênus - Botticelli</label>
+            <input type="radio" class="btn-check" name="pergunta11" id="p11c" value="c"><label
+              class="btn btn-outline-dark text-start" for="p11c">C) Guernica - Pablo Picasso</label>
+            <input type="radio" class="btn-check" name="pergunta11" id="p11d" value="d"><label
+              class="btn btn-outline-dark text-start" for="p11d">D) A Última Ceia - Leonardo da Vinci</label>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="col-12 col-md-6 col-lg-4">
+        <div class="quiz-card p-4 h-100">
+          <p class="question-text">O Humanismo renascentista se inspirava em qual tradição intelectual?</p>
+          <div class="btn-group-vertical w-100" role="group">
+            <input type="radio" class="btn-check" name="pergunta12" id="p12a" value="a" checked><label
+              class="btn btn-outline-dark text-start" for="p12a">A) Filosofia medieval escolástica</label>
+            <input type="radio" class="btn-check" name="pergunta12" id="p12b" value="b"><label
+              class="btn btn-outline-dark text-start" for="p12b">B) Pensamento greco-romano clássico</label>
+            <input type="radio" class="btn-check" name="pergunta12" id="p12c" value="c"><label
+              class="btn btn-outline-dark text-start" for="p12c">C) Doutrina Feudal</label>
+            <input type="radio" class="btn-check" name="pergunta12" id="p12d" value="d"><label
+              class="btn btn-outline-dark text-start" for="p12d">D) Teologia Bizantina</label>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="col-12 col-md-6 col-lg-4">
+        <div class="quiz-card p-4 h-100">
+          <p class="question-text">Quem é considerado um dos maiores saxofonistas da história do jazz?</p>
+          <div class="btn-group-vertical w-100" role="group">
+            <input type="radio" class="btn-check" name="pergunta13" id="p13a" value="a" checked><label
+              class="btn btn-outline-dark text-start" for="p13a">A) Louis Armstrong</label>
+            <input type="radio" class="btn-check" name="pergunta13" id="p13b" value="b"><label
+              class="btn btn-outline-dark text-start" for="p13b">B) John Coltrane</label>
+            <input type="radio" class="btn-check" name="pergunta13" id="p13c" value="c"><label
+              class="btn btn-outline-dark text-start" for="p13c">C) Miles Davis</label>
+            <input type="radio" class="btn-check" name="pergunta13" id="p13d" value="d"><label
+              class="btn btn-outline-dark text-start" for="p13d">D) Duke Ellington</label>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="col-12 col-md-6 col-lg-4">
+        <div class="quiz-card p-4 h-100">
+          <p class="question-text">Quem é o cantor considerado o maior ícone do reggae mundial?</p>
+          <div class="btn-group-vertical w-100" role="group">
+            <input type="radio" class="btn-check" name="pergunta14" id="p14a" value="a" checked><label
+              class="btn btn-outline-dark text-start" for="p14a">A) Peter Tosh</label>
+            <input type="radio" class="btn-check" name="pergunta14" id="p14b" value="b"><label
+              class="btn btn-outline-dark text-start" for="p14b">B) Jimmy Cliff</label>
+            <input type="radio" class="btn-check" name="pergunta14" id="p14c" value="c"><label
+              class="btn btn-outline-dark text-start" for="p14c">C) Bob Marley</label>
+            <input type="radio" class="btn-check" name="pergunta14" id="p14d" value="d"><label
+              class="btn btn-outline-dark text-start" for="p14d">D) Shaggy</label>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="col-12 col-md-6 col-lg-4">
+        <div class="quiz-card p-4 h-100">
+          <p class="question-text">Qual banda britânica lançou o álbum The Dark Side of the Moon?</p>
+          <div class="btn-group-vertical w-100" role="group">
+            <input type="radio" class="btn-check" name="pergunta15" id="p15a" value="a" checked><label
+              class="btn btn-outline-dark text-start" for="p15a">A) The Beatles</label>
+            <input type="radio" class="btn-check" name="pergunta15" id="p15b" value="b"><label
+              class="btn btn-outline-dark text-start" for="p15b">B) Pink Floyd</label>
+            <input type="radio" class="btn-check" name="pergunta15" id="p15c" value="c"><label
+              class="btn btn-outline-dark text-start" for="p15c">C) Queen</label>
+            <input type="radio" class="btn-check" name="pergunta15" id="p15d" value="d"><label
+              class="btn btn-outline-dark text-start" for="p15d">D) Led Zeppelin</label>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="text-center my-5">
+      <button type="button" class="btn btn-success btn-lg px-5 py-3" id="bt-checar">Confirmar Respostas</button>
+    </div>
+
+    <section class="resultado">
+      <div id="valor-resultado">
+
+      </div>
+    </section>
+    <div id="piechart_3d" style="width: 900px; height: 500px;"></div>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="JS/script.js"></script>
+
+</body>
+
+</html>
