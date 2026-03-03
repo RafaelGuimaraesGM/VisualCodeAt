@@ -101,6 +101,7 @@ function executarLoop () {
     if (comandos.teclaD) espaconave.rotacionarDir();
     renderEstrelas();
     espaconave.renderizar();
+    setTimeout(executarLoop, 1000 / 60);
 }
 
 (function iniciarJogo() {
