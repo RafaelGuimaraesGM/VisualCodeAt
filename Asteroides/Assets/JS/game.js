@@ -4,10 +4,13 @@ const ctxTela = telaJogo.getContext("2d");
 
 // Variáveis do jogo
 const NUM_ESTRELAS = 3000;
-const TAMANHO_NAVE = 30;
+const TAMANHO_NAVE = 40;
 const ANGULO_ROTACAO = 0.1;
+const VELOCIDADE_NAVE = 0.1;
+const FRICCAO = 0.99;
 var estrelas = [];
 var espaconave;
+var multiplicadorVelocidade = 1;
 var comandos = {
     teclaA: false,
     teclaD: false,
@@ -26,6 +29,8 @@ class Nave {
         this.velocidade = {x: 0, y: 0};
         this.angulo = -Math.PI / 2; // Ângulo inicial para apontar para cima
         this.raio = TAMANHO_NAVE / 2;
+        this.estaAcelerando = false;
+        this.compriChama = 0;
     }
 
     rotacionarEsq() {
@@ -36,17 +41,102 @@ class Nave {
         this.angulo += ANGULO_ROTACAO * 1;
     }
 
+    acelerarAtual() {
+        let acelerarAtual = VELOCIDADE_NAVE * multiplicadorVelocidade;
+        
+        this.velocidade.x += acelerarAtual * Math.cos(this.angulo);
+        this.velocidade.y += acelerarAtual * Math.sin(this.angulo);
+        this.estaAcelerando = true;
+
+        this.velocidade.x *= 0.99; 
+        this.velocidade.y *= 0.99;
+    }
+
+    desacelerarAtual() {
+        let freioAtual = VELOCIDADE_NAVE * multiplicadorVelocidade;
+        
+        this.velocidade.x -= freioAtual * Math.cos(this.angulo);
+        this.velocidade.y -= freioAtual * Math.sin(this.angulo);
+
+        this.velocidade.x *= 0.90; 
+        this.velocidade.y *= 0.90;
+    }
+
+    atualizar() {
+        this.velocidade.x *= FRICCAO;
+        this.velocidade.y *= FRICCAO;
+
+        this.x += this.velocidade.x;
+        this.y += this.velocidade.y;
+
+        // se estiver acelerando, aumenta o comprimento da chama
+        if (this.estaAcelerando) {
+            this.compriChama = Math.min(this.compriChama + 3, TAMANHO_NAVE * 2);
+        } else {
+            this.compriChama = Math.max(this.compriChama - 1, 0);
+        }
+
+        // volta dimensional
+        if (this.x < 0) this.x = telaJogo.width;
+        if (this.x > telaJogo.width) this.x = 0;
+        if (this.y < 0) this.y = telaJogo.height;
+        if (this.y > telaJogo.height) this.y = 0;
+
+        this.estaAcelerando = false;
+    }    
+
     renderizar() {
         ctxTela.save();
         ctxTela.translate(this.x, this.y);
         ctxTela.rotate(this.angulo);
+        
+        // renderizar chama do propulsor
+        if (this.compriChama > 0) {
+            let traseiraNave = -this.raio;
+            let variacao = 0.9 + Math.random() * 0.3;
+            let tamanhoChama = this.compriChama * variacao;
+
+            function criarGradienteChama(raioInterno, raioExterno, cores) {
+                let gradiente = ctxTela.createRadialGradient(traseiraNave, 0, raioInterno, traseiraNave, 0, raioExterno);
+                cores.forEach(([parada, cor]) => {
+                    gradiente.addColorStop(parada, cor);
+                });
+                return gradiente;
+            }
+
+            function renderchama(altura, multiplicador, estilo) {
+                ctxTela.beginPath();
+                ctxTela.moveTo(traseiraNave, altura);
+                ctxTela.lineTo(traseiraNave - tamanhoChama * multiplicador, 0);
+                ctxTela.lineTo(traseiraNave, -altura);
+                ctxTela.closePath();
+                ctxTela.fillStyle = estilo;
+                ctxTela.fill();
+            }
+
+            let gradInterno = criarGradienteChama(tamanhoChama * 0.05, tamanhoChama * 0.4, [
+                [0, "rgba(255, 150, 0, 0.8)"],
+                [1, "rgba(255, 0, 0, 0.3)"],
+            ]);
+
+            let gradExterno = criarGradienteChama(tamanhoChama * 0.1, tamanhoChama * 0.4, [
+                [0, "rgba(255, 255, 255, 0.8)"],
+                [1, "rgba(255, 208, 0, 0.79)"],
+            ]);
+            
+
+            renderchama(TAMANHO_NAVE / 4, 0.9, gradInterno);
+            renderchama(TAMANHO_NAVE / 6, 0.5, gradExterno);
+        }
+        
+        // corpo da nave
         ctxTela.beginPath();
         ctxTela.moveTo(TAMANHO_NAVE / 2, 0);  
         ctxTela.lineTo(-TAMANHO_NAVE / 2, -TAMANHO_NAVE / 3);
         ctxTela.lineTo(-TAMANHO_NAVE / 2, TAMANHO_NAVE / 3);
         ctxTela.closePath();
-        ctxTela.fillStyle = "#ff5454";
-        ctxTela.strokeStyle = "#941100";
+        ctxTela.fillStyle = "rgba(0, 0, 0, 0)";
+        ctxTela.strokeStyle = "#ff1e00";
         ctxTela.lineWidth = 1.5;
         ctxTela.stroke();
         ctxTela.fill();
@@ -59,6 +149,8 @@ document.addEventListener("keydown", (tecla) => {
     switch (tecla.code) {
         case "KeyA": comandos.teclaA = true; break;
         case "KeyD": comandos.teclaD = true; break;
+        case "KeyW": comandos.teclaW = true; break;
+        case "KeyS": comandos.teclaS = true; break;
     }
 });
 
@@ -66,6 +158,8 @@ document.addEventListener("keyup", (tecla) => {
     switch (tecla.code) {
         case "KeyA": comandos.teclaA = false; break;
         case "KeyD": comandos.teclaD = false; break;
+        case "KeyW": comandos.teclaW = false; break;
+        case "KeyS": comandos.teclaS = false; break;
     }
 });
 
@@ -99,7 +193,10 @@ function renderEstrelas() {
 function executarLoop () {
     if (comandos.teclaA) espaconave.rotacionarEsq();
     if (comandos.teclaD) espaconave.rotacionarDir();
+    if (comandos.teclaW) espaconave.acelerarAtual();
+    if (comandos.teclaS) espaconave.desacelerarAtual();
     renderEstrelas();
+    espaconave.atualizar();
     espaconave.renderizar();
     setTimeout(executarLoop, 1000 / 60);
 }
