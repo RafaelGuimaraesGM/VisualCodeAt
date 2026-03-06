@@ -1,6 +1,9 @@
 // Declaração de elementos
 const telaJogo = document.getElementById("telaJogo");
 const ctxTela = telaJogo.getContext("2d");
+const infoPontuacao = document.getElementById("infoPontuacao");
+const infoVidas = document.getElementById("infoVidas");
+const infoVelocidade = document.getElementById("infoVelocidade");
 
 // Variáveis do jogo
 const NUM_ESTRELAS = 3000;
@@ -9,6 +12,9 @@ const ANGULO_ROTACAO = 0.1;
 const VELOCIDADE_NAVE = 0.1;
 const FRICCAO = 0.99;
 const VELOCIDADE_PROJETIL = 10;
+
+var pontuacao = 0;
+var vidas = 3;
 
 var estrelas = [];
 var projetis = [];
@@ -202,11 +208,11 @@ class Asteroide {
     }
 
     criarVertices() {
-        let totalVertices = Math.round(Math.random() * 8) + 6;
+        let totalVertices = Math.round(Math.random() * 10) + 6;
         let vertices = [];
         for (let i = 0; i <= totalVertices; i++) {
             let anguloVertice = (i / totalVertices) * Math.PI * 2;
-            let raioVertice = this.raio + Math.random() * 0.8 + 0.7;
+            let raioVertice = this.raio + Math.random() * 30 + 0.7;
             vertices.push({
                 x: Math.cos(anguloVertice) * raioVertice,
                 y: Math.sin(anguloVertice) * raioVertice
@@ -217,7 +223,14 @@ class Asteroide {
 
 
     atualizar() {
+        this.x += this.vel.x;
+        this.y += this.vel.y;
+        this.angulo += this.velocRotacao;
 
+        if (this.x < 0) this.x = telaJogo.width;
+        if (this.x > telaJogo.width) this.x = 0;
+        if (this.y < 0) this.y = telaJogo.height;
+        if (this.y > telaJogo.height) this.y = 0;
     }
 
     renderizar() {
@@ -225,7 +238,17 @@ class Asteroide {
         ctxTela.translate(this.x, this.y);
         ctxTela.rotate(this.angulo);
         ctxTela.beginPath();
-        ctxTela.moveTo(this.raio, 0);
+        ctxTela.moveTo(this.vertices[0].x, this.vertices[0].y);
+        for (let i = 1; i < this.vertices.length; i++) {
+            ctxTela.lineTo(this.vertices[i].x, this.vertices[i].y);
+        }
+        ctxTela.closePath();
+        ctxTela.fillStyle = "rgba(100, 100, 100, 0.8)";
+        ctxTela.strokeStyle = "rgba(150, 150, 150, 0.9)";
+        ctxTela.lineWidth = 1.5;
+        ctxTela.fill();
+        ctxTela.stroke();
+        ctxTela.restore();
     }
 }
 
@@ -277,6 +300,45 @@ function renderEstrelas() {
     ctxTela.restore();
 }
 
+function criarAsteroides(quantidade, tamanhoMin, tamanhoMax) {
+    for (let i = 0; i < quantidade; i++) {
+        let tamanho = Math.random() * (tamanhoMax - tamanhoMin) + tamanhoMin;
+        let x = Math.random() * 2 - 1;;
+        let y = Math.random() * 2 - 1;;
+        let velX = (Math.random() - 0.5) * 2;
+        let velY = (Math.random() - 0.5) * 2;
+        asteroides.push(new Asteroide(x, y, tamanho, velX, velY));
+    }
+}
+
+function detectarColisoes(objeto1, objeto2) {
+    return Math.sqrt(
+        Math.pow(objeto1.x - objeto2.x, 2) + Math.pow(objeto1.y - objeto2.y, 2)
+    )
+}
+
+function verificarColisoes() {
+    // Verificar colisões entre projéteis e asteroides
+    for (let i = projetis.length - 1; i >= 0; i--) {
+        let projetil = projetis[i];
+        for (let j = asteroides.length - 1; j >= 0; j--) {
+            let asteroide = asteroides[j];
+            if (detectarColisoes(projetil, asteroide) < projetil.raio + asteroide.raio) {
+                projetis.splice(i, 1);
+                asteroides.splice(j, 1);
+                pontuacao++;
+                break;
+            }
+        }
+    }
+}
+
+function atualizarInfoJogo() {
+    infoPontuacao.textContent = pontuacao;
+    infoVidas.textContent = vidas;
+    infoVelocidade.textContent = Math.round(Math.sqrt(espaconave.velocidade.x ** 2 + espaconave.velocidade.y ** 2) * 10);
+}
+
 function executarLoop() {
     if (comandos.teclaA) espaconave.rotacionarEsq();
     if (comandos.teclaD) espaconave.rotacionarDir();
@@ -299,13 +361,24 @@ function executarLoop() {
         }
     });
 
+    // Atualizar e renderizar asteroides
+    asteroides.forEach(asteroide => {
+        asteroide.atualizar();
+        asteroide.renderizar();
+    }); 
+
     espaconave.atualizar();
     espaconave.renderizar();
+    atualizarInfoJogo();
+    verificarColisoes();
     setTimeout(executarLoop, 1000 / 60);
 }
 
 (function iniciarJogo() {
     espaconave = new Nave(telaJogo.width / 2, telaJogo.height / 2);
+
+    criarAsteroides(10, 30, 80);
+    criarAsteroides(5, 80, 150);
     criarEstrelas();
     executarLoop();
 })();

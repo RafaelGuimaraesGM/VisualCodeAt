@@ -14,6 +14,6 @@ body {
     display: block;
     border: 2px solid #00ffff;
     box-shadow: 0 0 15px #00ffff;
-    max-width: 100vw;
-    max-height: 99vh;
+    max-width: 150vw;
+    max-height: 95vh;
 }
