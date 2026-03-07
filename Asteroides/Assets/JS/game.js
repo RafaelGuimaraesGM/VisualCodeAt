@@ -4,6 +4,7 @@ const ctxTela = telaJogo.getContext("2d");
 const infoPontuacao = document.getElementById("infoPontuacao");
 const infoVidas = document.getElementById("infoVidas");
 const infoVelocidade = document.getElementById("infoVelocidade");
+const areaMensagem = document.getElementById("mensagem");
 
 // Variáveis do jogo
 const NUM_ESTRELAS = 3000;
@@ -12,9 +13,13 @@ const ANGULO_ROTACAO = 0.1;
 const VELOCIDADE_NAVE = 0.1;
 const FRICCAO = 0.99;
 const VELOCIDADE_PROJETIL = 10;
+const CADENCIA_TIRO = 100;
 
 var pontuacao = 0;
 var vidas = 3;
+var ticks = 0;
+var jogoAcabou = false;
+var timerID;
 
 var estrelas = [];
 var projetis = [];
@@ -75,11 +80,27 @@ class Nave {
     }
 
     atirar() {
-        projetis.push(new Projetil(
-            this.x, this.y,
-            VELOCIDADE_PROJETIL * Math.cos(this.angulo),
-            VELOCIDADE_PROJETIL * Math.sin(this.angulo)
-        ));
+        if (projetis.length >= 10) return; // Limite de projéteis na tela
+        if (ticks >= CADENCIA_TIRO !== 0) {
+
+            let variacao = (Math.random() * 0.5) - 0.25; // Variabilidade de 50% na velocidade do projétil
+
+            projetis.push(new Projetil(
+                this.x + Math.cos(this.angulo) * this.raio, this.y + Math.sin(this.angulo) * this.raio,
+                VELOCIDADE_PROJETIL * Math.cos(this.angulo) + variacao,
+                VELOCIDADE_PROJETIL * Math.sin(this.angulo) + variacao
+            ));
+
+            ticks = 0;
+        }
+    }
+
+    reiniciarPosicao() {
+        this.x = telaJogo.width / 2;
+        this.y = telaJogo.height / 2;
+        this.velocidade.x = 0;
+        this.velocidade.y = 0;
+        this.angulo = -Math.PI / 2;
     }
 
     atualizar() {
@@ -331,12 +352,38 @@ function verificarColisoes() {
             }
         }
     }
+
+    // Verificar colisões entre a nave e asteroides
+    for (let j = asteroides.length - 1; j >= 0; j--) {
+        let asteroide = asteroides[j];
+        if (detectarColisoes(espaconave, asteroide) < espaconave.raio + asteroide.raio) {
+            asteroides.splice(j, 1);
+            perderVida();
+            break;
+        }
+    }
 }
 
 function atualizarInfoJogo() {
     infoPontuacao.textContent = pontuacao;
     infoVidas.textContent = vidas;
-    infoVelocidade.textContent = Math.round(Math.sqrt(espaconave.velocidade.x ** 2 + espaconave.velocidade.y ** 2) * 10);
+    infoVelocidade.textContent = Math.round(Math.sqrt(espaconave.velocidade.x ** 2 + espaconave.velocidade.y ** 2) * 5000);
+}
+
+function perderVida() {
+    vidas--;
+    if (vidas <= 0) {
+        executarGameOver();
+    } else {
+        espaconave.reiniciarPosicao();
+    }
+}
+
+function executarGameOver() {
+    jogoAcabou = true;
+    areaMensagem.textContent = "Game Over! Pontuação: " + pontuacao + ". Pressione F5 para jogar novamente.";
+    areaMensagem.style.display = "block";
+    clearTimeout(timerID);
 }
 
 function executarLoop() {
@@ -365,13 +412,17 @@ function executarLoop() {
     asteroides.forEach(asteroide => {
         asteroide.atualizar();
         asteroide.renderizar();
-    }); 
+    });
 
     espaconave.atualizar();
     espaconave.renderizar();
+
     atualizarInfoJogo();
     verificarColisoes();
-    setTimeout(executarLoop, 1000 / 60);
+
+    ticks++;
+
+    timerID = setTimeout(executarLoop, 1000 / 60);
 }
 
 (function iniciarJogo() {
