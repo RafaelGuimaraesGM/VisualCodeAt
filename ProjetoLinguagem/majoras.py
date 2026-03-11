@@ -734,48 +734,328 @@ se x < 100 {
     print("------ Saída do programa ------")
     Interpreter().run(program)
 
+#####################################################
+# INTERFACE GRÁFICA COM TKINTER 
+#####################################################
+
+import tkinter as tk
+import tkinter.ttk as ttk
+from tkinter import filedialog, messagebox
+import os
+import sys
+import io
 
 ###############################################
-## INTERFACE GRÁFICA
+# TEMA E CORES
 ###############################################
+BG_MAIN = "#1e1e1e"
+BG_SIDEBAR = "#252526"
+BG_TOOLBAR = "#333333"
+BG_CONSOLE = "#0f0f0f"
 
-def run_minilang_from_gui():
-    code = text_area.get("1.0", tk.END)
+TEXT_COLOR = "#d4d4d4"
+KEYWORD_COLOR = "#569CD6"
 
+FONT_EDITOR = ("JetBrains Mono", 13)
+FONT_UI = ("Segoe UI", 10)
+
+KEYWORDS = [
+    "let","se","senao","para","enquanto",
+    "funcao","retorne","escreva","break","continue"
+]
+
+###############################################
+# SYNTAX HIGHLIGHT
+###############################################
+def highlight(text):
+    for tag in text.tag_names():
+        text.tag_delete(tag)
+
+    for kw in KEYWORDS:
+        start = "1.0"
+        while True:
+            pos = text.search(r"\m"+kw+r"\M", start, stopindex="end", regexp=True)
+            if not pos:
+                break
+            end = f"{pos}+{len(kw)}c"
+            text.tag_add(kw,pos,end)
+            text.tag_config(
+                kw,
+                foreground=KEYWORD_COLOR,
+                font=("JetBrains Mono",13,"bold")
+            )
+            start = end
+
+###############################################
+# EDITOR TABS
+###############################################
+editors = {}
+
+def create_editor(filename="novo.maj", content=""):
+    frame = tk.Frame(tabs, bg=BG_MAIN)
+    editor_area = tk.Frame(frame, bg=BG_MAIN)
+    editor_area.pack(fill="both", expand=True)
+
+    lines = tk.Text(
+        editor_area,
+        width=4,
+        bg="#2b2b2b",
+        fg="#858585",
+        font=FONT_EDITOR,
+        state="disabled"
+    )
+    lines.pack(side="left", fill="y")
+
+    text = tk.Text(
+        editor_area,
+        font=FONT_EDITOR,
+        bg=BG_MAIN,
+        fg=TEXT_COLOR,
+        insertbackground="white",
+        undo=True,
+        borderwidth=0
+    )
+    text.pack(side="left", fill="both", expand=True)
+    text.insert("1.0", content)
+    text.bind("<KeyRelease>", update_lines)
+    text.bind("<KeyRelease>", update_cursor)
+    text.bind("<ButtonRelease>", update_cursor)
+
+    tabs.add(frame, text=os.path.basename(filename))
+    editors[frame] = {"text": text, "lines": lines, "file": filename}
+    update_lines()
+
+###############################################
+# LINE NUMBERS
+###############################################
+def update_lines(event=None):
+    editor = get_current_editor()
+    if not editor: return
+    text = editor["text"]
+    lines = text.get("1.0","end-1c").split("\n")
+    ln = editor["lines"]
+    ln.config(state="normal")
+    ln.delete("1.0","end")
+    for i in range(1,len(lines)+1):
+        ln.insert("end", f"{i}\n")
+    ln.config(state="disabled")
+    highlight(text)
+
+###############################################
+# CURSOR STATUS
+###############################################
+def update_cursor(event=None):
+    editor = get_current_editor()
+    if not editor: return
+    text = editor["text"]
+    row, col = text.index("insert").split(".")
+    status_var.set(f"Linha {row} | Coluna {int(col)+1}")
+
+###############################################
+# GET CURRENT EDITOR
+###############################################
+def get_current_editor():
+    tab = tabs.select()
+    if not tab: return None
+    frame = root.nametowidget(tab)
+    return editors.get(frame)
+
+###############################################
+# EXECUTAR CÓDIGO
+###############################################
+def run_minilang_from_gui(event=None):
+    editor = get_current_editor()
+    if not editor: return
+    code = editor["text"].get("1.0","end")
     try:
         tokens = lex(code)
         parser = Parser(tokens)
         program = parser.parse()
-
         old_stdout = sys.stdout
         sys.stdout = io.StringIO()
-
         Interpreter().run(program)
-
         output = sys.stdout.getvalue()
         sys.stdout = old_stdout
 
-        output_area.config(state="normal")
-        output_area.delete("1.0", tk.END)
-        output_area.insert(tk.END, output)
-        output_area.config(state="disabled")
-
+        console.config(state="normal")
+        console.delete("1.0","end")
+        console.insert("end", output)
+        console.config(state="disabled")
+        status_var.set("Programa executado")
     except Exception as e:
         messagebox.showerror("Erro", str(e))
+        status_var.set("Erro")
 
+###############################################
+# FILE FUNCTIONS
+###############################################
+def new_file():
+    create_editor()
 
-if __name__ == "__main__":
-    root = tk.Tk()
-    root.title("Majoras IDE")
+def open_file():
+    file = filedialog.askopenfilename(filetypes=[("Majoras","*.maj"),("Todos","*.*")])
+    if not file: return
+    with open(file,"r",encoding="utf8") as f:
+        content = f.read()
+    create_editor(file, content)
 
-    tk.Label(root, text="Código Majoras:").pack(anchor="w")
-    text_area = scrolledtext.ScrolledText(root, width=80, height=25)
-    text_area.pack()
+def save_file(event=None):
+    editor = get_current_editor()
+    if not editor: return
+    file = filedialog.asksaveasfilename(defaultextension=".maj")
+    if not file: return
+    with open(file,"w",encoding="utf8") as f:
+        f.write(editor["text"].get("1.0","end"))
 
-    tk.Button(root, text="Executar", command=run_minilang_from_gui).pack(pady=10)
+###############################################
+# INTERFACE PRINCIPAL
+###############################################
+root = tk.Tk()
+root.title("Majoras IDE")
+root.geometry("1400x800")
+root.configure(bg=BG_MAIN)
 
-    tk.Label(root, text="Saída:").pack(anchor="w")
-    output_area = scrolledtext.ScrolledText(root, width=80, height=10, state="disabled")
-    output_area.pack()
+###############################################
+# MENU
+###############################################
+menubar = tk.Menu(root)
+file_menu = tk.Menu(menubar, tearoff=0)
+file_menu.add_command(label="Novo", command=new_file)
+file_menu.add_command(label="Abrir", command=open_file)
+file_menu.add_command(label="Salvar", command=save_file)
+menubar.add_cascade(label="Arquivo", menu=file_menu)
+run_menu = tk.Menu(menubar, tearoff=0)
+run_menu.add_command(label="Executar (F5)", command=run_minilang_from_gui)
+menubar.add_cascade(label="Executar", menu=run_menu)
+root.config(menu=menubar)
 
-    root.mainloop()
+###############################################
+# TOOLBAR
+###############################################
+toolbar = tk.Frame(root, bg=BG_TOOLBAR)
+toolbar.pack(fill="x")
+tk.Button(
+    toolbar,
+    text="▶ Executar",
+    command=run_minilang_from_gui,
+    bg="#0e639c",
+    fg="white",
+    relief="flat",
+    font=FONT_UI
+).pack(side="left", padx=10, pady=6)
+
+###############################################
+# LAYOUT PRINCIPAL
+###############################################
+main = ttk.PanedWindow(root, orient=tk.HORIZONTAL)
+main.pack(fill="both", expand=True)
+
+###############################################
+# EXPLORER DARK COM ARQUIVOS
+###############################################
+style = ttk.Style()
+style.theme_use("default")
+style.configure("Treeview",
+    background=BG_SIDEBAR,
+    foreground=TEXT_COLOR,
+    fieldbackground=BG_SIDEBAR,
+    borderwidth=0,
+    rowheight=22
+)
+style.map("Treeview",
+    background=[("selected","#094771")]
+)
+style.configure("Treeview.Heading",
+    background=BG_TOOLBAR,
+    foreground="white",
+    relief="flat"
+)
+
+explorer_frame = tk.Frame(main, bg=BG_SIDEBAR, width=250)
+tree_scroll = tk.Scrollbar(explorer_frame)
+tree_scroll.pack(side="right", fill="y")
+tree = ttk.Treeview(explorer_frame, yscrollcommand=tree_scroll.set)
+tree.pack(fill="both", expand=True)
+tree_scroll.config(command=tree.yview)
+main.add(explorer_frame, weight=1)
+
+def load_folder(path="."):
+    tree.delete(*tree.get_children())
+    root_node = tree.insert(
+        "",
+        "end",
+        text=os.path.basename(os.path.abspath(path)),
+        open=True,
+        values=[path]
+    )
+    process_folder(root_node, path)
+
+def process_folder(parent, path):
+    try:
+        for item in os.listdir(path):
+            full = os.path.join(path,item)
+            node = tree.insert(parent, "end", text=item, values=[full])
+            if os.path.isdir(full):
+                process_folder(node, full)
+    except PermissionError:
+        pass
+
+def open_from_explorer(event):
+    item = tree.focus()
+    if not item: return
+    path = tree.item(item,"values")[0]
+    if os.path.isdir(path): return
+    try:
+        with open(path,"r",encoding="utf8") as f:
+            content=f.read()
+        create_editor(path,content)
+    except:
+        pass
+
+tree.bind("<Double-1>", open_from_explorer)
+
+###############################################
+# EDITOR AREA COM CONSOLE
+###############################################
+editor_area = ttk.PanedWindow(main, orient=tk.VERTICAL)
+tabs = ttk.Notebook(editor_area)
+tabs.pack(fill="both", expand=True)
+editor_area.add(tabs, weight=4)
+
+console = tk.Text(
+    editor_area,
+    height=10,
+    bg=BG_CONSOLE,
+    fg="#00ff9c",
+    font=("JetBrains Mono", 12)
+)
+editor_area.add(console, weight=1)
+main.add(editor_area, weight=4)
+
+###############################################
+# STATUS BAR
+###############################################
+status_var = tk.StringVar()
+status_var.set("Majoras IDE pronto")
+status = tk.Label(
+    root,
+    textvariable=status_var,
+    anchor="w",
+    bg="#007acc",
+    fg="white",
+    font=FONT_UI
+)
+status.pack(fill="x")
+
+###############################################
+# SHORTCUTS
+###############################################
+root.bind("<F5>", run_minilang_from_gui)
+root.bind("<Control-s>", save_file)
+
+###############################################
+# INICIALIZAÇÃO
+###############################################
+create_editor()
+load_folder(".")
+root.mainloop()
