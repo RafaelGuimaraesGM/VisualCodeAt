@@ -3,6 +3,7 @@
 ###############################################
 
 from ast import Assign, expr, stmt
+from email.mime import text
 import re
 import tkinter as tk
 from tkinter import scrolledtext, messagebox
@@ -11,6 +12,24 @@ import io
 from unicodedata import name
 
 from colorama import init
+
+# --- COLOQUE AQUI (Logo após as cores iniciais) ---
+THEMES = {
+    "Dark (Padrão)": {
+        "bg_main": "#1e1e1e", "bg_sidebar": "#252526", "bg_console": "#0f0f0f",
+        "text": "#d4d4d4", "keyword": "#569CD6", "string": "#CE9178", "number": "#B5CEA8"
+    },
+    "Dracula": {
+        "bg_main": "#282a36", "bg_sidebar": "#21222c", "bg_console": "#191a21",
+        "text": "#f8f8f2", "keyword": "#ff79c6", "string": "#f1fa8c", "number": "#bd93f9"
+    },
+    "One Light": {
+        "bg_main": "#fafafa", "bg_sidebar": "#f0f0f0", "bg_console": "#ffffff",
+        "text": "#383a42", "keyword": "#a626a4", "string": "#50a14f", "number": "#986801"
+    }
+    
+}
+CURRENT_THEME = "Dark (Padrão)" # Tema inicial
 
 ###############################################
 ## LEXER
@@ -764,35 +783,204 @@ KEYWORDS = [
     "funcao","retorne","escreva","break","continue"
 ]
 
+AUTOCOMPLETE_WORDS = KEYWORDS.copy()
+
+###############################################
+# AUTOCOMPLETE
+###############################################
+
+autocomplete_listbox = None
+
+def hide_autocomplete():
+    global autocomplete_listbox
+    if autocomplete_listbox:
+        autocomplete_listbox.destroy()
+        autocomplete_listbox = None
+
+
+def get_current_word(text):
+    cursor = text.index("insert")
+    line, col = cursor.split(".")
+    line_text = text.get(f"{line}.0", cursor)
+
+    match = re.search(r"[a-zA-Z_]\w*$", line_text)
+    if match:
+        return match.group(), match.start()
+
+    return "", None
+
+
+def show_autocomplete(text):
+    global autocomplete_listbox
+    word, start = get_current_word(text)
+
+    if not word:
+        hide_autocomplete()
+        return
+
+    matches = [w for w in AUTOCOMPLETE_WORDS if w.startswith(word)]
+    if not matches:
+        hide_autocomplete()
+        return
+
+    if not autocomplete_listbox:
+        autocomplete_listbox = tk.Listbox(
+            text,
+            height=min(5, len(matches)),
+            bg="#2b2b2b",
+            fg="white",
+            font=FONT_EDITOR,
+            takefocus=0, # IMPORTANTE: não rouba o foco do teclado
+            selectbackground="#0e639c"
+        )
+        
+    # Atualiza o conteúdo da lista
+    autocomplete_listbox.delete(0, "end")
+    for m in matches:
+        autocomplete_listbox.insert("end", m)
+
+    bbox = text.bbox("insert")
+    if bbox:
+        x, y, w, h = bbox
+        autocomplete_listbox.place(x=x, y=y + h)
+    
+    autocomplete_listbox.selection_set(0)
+    autocomplete_listbox.activate(0)
+
+
+def apply_autocomplete(text):
+    global autocomplete_listbox
+
+    if not autocomplete_listbox:
+        return
+
+    word, start = get_current_word(text)
+    if start is None:
+        return
+
+    # Pega a seleção da lista (ex: "escreva")
+    selection = autocomplete_listbox.get("active")
+
+    # Mapeamento de atalhos manuais (Snippets)
+    snippets = {
+        "esc": "escreva",
+        "fun": "funcao",
+        "ret": "retorne",
+        "enq": "enquanto"
+    }
+    
+    # Se o que foi digitado estiver no dicionário, usa o valor completo
+    final_text = snippets.get(word, selection)
+
+    cursor = text.index("insert")
+    line, col = cursor.split(".")
+    start_index = f"{line}.{start}"
+
+    # Deleta o atalho (ex: 'esc') e insere o completo (ex: 'escreva')
+    text.delete(start_index, cursor)
+    text.insert(start_index, final_text)
+
+    hide_autocomplete()
+
+
+def autocomplete_event(event):
+    editor = get_current_editor()
+    if not editor: return
+    text = editor["text"]
+
+    if event.keysym in ("Return", "Tab"):
+        if autocomplete_listbox:
+            apply_autocomplete(text)
+            return "break" # Impede o Tab de sair da caixa de texto
+        return
+
+    # Se a lista não existir, mas o usuário apertar Tab após digitar algo
+    # podemos forçar a abertura ou expansão aqui se desejar.
+    
+    text.after(1, lambda: show_autocomplete(text))
+
+
 ###############################################
 # SYNTAX HIGHLIGHT
 ###############################################
+
 def highlight(text):
+    # Remove todas as tags antigas para não acumular cores
     for tag in text.tag_names():
         text.tag_delete(tag)
 
+    content = text.get("1.0", "end-1c")
+    
+    # PEGA AS CORES DO TEMA ATUAL (Essa é a parte que mudou!)
+    theme = THEMES[CURRENT_THEME]
+
+    # CONFIGURAÇÃO DAS CORES USANDO O TEMA
+    text.tag_config("keyword", foreground=theme["keyword"], font=("JetBrains Mono", 13, "bold"))
+    text.tag_config("number", foreground=theme["number"])
+    text.tag_config("string", foreground=theme["string"])
+    text.tag_config("function", foreground="#DCDCAA") # Pode adicionar no THEMES depois se quiser
+    text.tag_config("variable", foreground="#9CDCFE")
+
+    # PALAVRAS-CHAVE
     for kw in KEYWORDS:
-        start = "1.0"
+        start_index = "1.0"
         while True:
-            pos = text.search(r"\m"+kw+r"\M", start, stopindex="end", regexp=True)
+            pos = text.search(r"\b" + kw + r"\b", start_index, stopindex="end", regexp=True)
             if not pos:
                 break
-            end = f"{pos}+{len(kw)}c"
-            text.tag_add(kw,pos,end)
-            text.tag_config(
-                kw,
-                foreground=KEYWORD_COLOR,
-                font=("JetBrains Mono",13,"bold")
-            )
-            start = end
+            end_index = f"{pos}+{len(kw)}c"
+            text.tag_add("keyword", pos, end_index)
+            start_index = end_index
+
+    # STRINGS
+    for match in re.finditer(r'\".*?\"|\'.*?\'', content):
+        start = f"1.0+{match.start()}c"
+        end = f"1.0+{match.end()}c"
+        text.tag_add("string", start, end)
+
+    # NÚMEROS
+    for match in re.finditer(r"\b\d+\b", content):
+        start = f"1.0+{match.start()}c"
+        end = f"1.0+{match.end()}c"
+        text.tag_add("number", start, end)
+
+    # FUNÇÕES
+    for match in re.finditer(r"\b([a-zA-Z_]\w*)\s*(?=\()", content):
+        start = f"1.0+{match.start()}c"
+        end = f"1.0+{match.end(1)}c"
+        text.tag_add("function", start, end)
+
+    # VARIÁVEIS
+    for match in re.finditer(r"\b[a-zA-Z_]\w*\b", content):
+        start = f"1.0+{match.start()}c"
+        end = f"1.0+{match.end()}c"
+        tags_no_local = text.tag_names(start)
+        if "keyword" in tags_no_local or "function" in tags_no_local:
+            continue
+        text.tag_add("variable", start, end)
+
 
 ###############################################
 # EDITOR TABS
 ###############################################
 editors = {}
 
+def sync_scroll_lines_and_text(*args):
+    editor = get_current_editor()
+    if not editor:
+        return
+    editor["text"].yview(*args)
+    editor["lines"].yview(*args)
+
+def on_text_scroll(first, last):
+    editor = get_current_editor()
+    if not editor:
+        return
+    editor["lines"].yview_moveto(first)
+
 def create_editor(filename="novo.maj", content=""):
     frame = tk.Frame(tabs, bg=BG_MAIN)
+
     editor_area = tk.Frame(frame, bg=BG_MAIN)
     editor_area.pack(fill="both", expand=True)
 
@@ -813,16 +1001,33 @@ def create_editor(filename="novo.maj", content=""):
         fg=TEXT_COLOR,
         insertbackground="white",
         undo=True,
-        borderwidth=0
+        borderwidth=0,
+        yscrollcommand=on_text_scroll
     )
     text.pack(side="left", fill="both", expand=True)
-    text.insert("1.0", content)
-    text.bind("<KeyRelease>", update_lines)
-    text.bind("<KeyRelease>", update_cursor)
-    text.bind("<ButtonRelease>", update_cursor)
 
+    # inserir conteúdo inicial
+    text.insert("1.0", content)
+
+    # eventos
+    text.bind("<KeyRelease>", update_lines, add="+")
+    text.bind("<KeyRelease>", update_cursor, add="+")
+    text.bind("<KeyPress>", autocomplete_event, add="+")
+    text.bind("<ButtonRelease>", update_lines, add="+")
+    text.bind("<ButtonRelease>", update_cursor, add="+")
+    text.bind("<<Paste>>", update_lines, add="+")
+    text.bind("<<Cut>>", update_lines, add="+")
+    text.bind("<Return>", update_lines, add="+")
+    text.bind("<BackSpace>", update_lines, add="+")
+    text.bind("<Delete>", update_lines, add="+")
     tabs.add(frame, text=os.path.basename(filename))
-    editors[frame] = {"text": text, "lines": lines, "file": filename}
+
+    editors[frame] = {
+        "text": text,
+        "lines": lines,
+        "file": filename
+    }
+
     update_lines()
 
 ###############################################
@@ -830,15 +1035,26 @@ def create_editor(filename="novo.maj", content=""):
 ###############################################
 def update_lines(event=None):
     editor = get_current_editor()
-    if not editor: return
+    if not editor:
+        return
+
     text = editor["text"]
-    lines = text.get("1.0","end-1c").split("\n")
     ln = editor["lines"]
+
+    total_linhas = int(text.index("end-1c").split(".")[0])
+
     ln.config(state="normal")
-    ln.delete("1.0","end")
-    for i in range(1,len(lines)+1):
+    ln.delete("1.0", "end")
+
+    for i in range(1, total_linhas + 1):
         ln.insert("end", f"{i}\n")
+
     ln.config(state="disabled")
+
+    # mantém a barra de linhas sincronizada com o scroll do editor
+    first, last = text.yview()
+    ln.yview_moveto(first)
+
     highlight(text)
 
 ###############################################
@@ -908,7 +1124,61 @@ def save_file(event=None):
         f.write(editor["text"].get("1.0","end"))
 
 ###############################################
-# INTERFACE PRINCIPAL
+# FUNÇÕES DO EXPLORER (Movi para cá para evitar erro de leitura)
+###############################################
+def process_folder(parent, path):
+    try:
+        for item in os.listdir(path):
+            full = os.path.join(path, item)
+            node = tree.insert(parent, "end", text=item, values=[full])
+            if os.path.isdir(full):
+                process_folder(node, full)
+    except PermissionError:
+        pass
+
+def load_folder(path="."):
+    tree.delete(*tree.get_children())
+    root_node = tree.insert("", "end", text=os.path.basename(os.path.abspath(path)), open=True, values=[path])
+    process_folder(root_node, path)
+
+def open_from_explorer(event):
+    item = tree.focus()
+    if not item: return
+    path = tree.item(item, "values")[0]
+    if os.path.isdir(path): return
+    try:
+        with open(path, "r", encoding="utf8") as f:
+            content = f.read()
+        create_editor(path, content)
+    except: pass
+
+# Função nova para limpar o console
+def clear_console():
+    console.config(state="normal")
+    console.delete("1.0", "end")
+    console.config(state="disabled")
+    
+# --- COLOQUE ABAIXO DE clear_console() ---
+def change_theme(theme_name):
+    global CURRENT_THEME
+    CURRENT_THEME = theme_name
+    theme = THEMES[theme_name]
+    
+    # Atualiza o console
+    console.config(bg=theme["bg_console"], fg="#00ff9c" if theme_name != "One Light" else "#111111")
+    
+    # Atualiza todos os editores abertos
+    for frame, data in editors.items():
+        txt = data["text"]
+        ln = data["lines"]
+        txt.config(bg=theme["bg_main"], fg=theme["text"], insertbackground=theme["text"])
+        ln.config(bg=theme["bg_sidebar"])
+        highlight(txt) # Re-aplica as cores no texto
+    
+    status_var.set(f"Tema alterado para {theme_name}")    
+
+###############################################
+# INTERFACE PRINCIPAL 
 ###############################################
 root = tk.Tk()
 root.title("Majoras IDE")
@@ -924,25 +1194,40 @@ file_menu.add_command(label="Novo", command=new_file)
 file_menu.add_command(label="Abrir", command=open_file)
 file_menu.add_command(label="Salvar", command=save_file)
 menubar.add_cascade(label="Arquivo", menu=file_menu)
+
 run_menu = tk.Menu(menubar, tearoff=0)
 run_menu.add_command(label="Executar (F5)", command=run_minilang_from_gui)
 menubar.add_cascade(label="Executar", menu=run_menu)
+
+# --- COLOQUE NA SEÇÃO DE MENU ---
+theme_menu = tk.Menu(menubar, tearoff=0)
+theme_menu.add_command(label="Dark (Padrão)", command=lambda: change_theme("Dark (Padrão)"))
+theme_menu.add_command(label="Dracula", command=lambda: change_theme("Dracula"))
+theme_menu.add_command(label="One Light", command=lambda: change_theme("One Light"))
+menubar.add_cascade(label="Temas", menu=theme_menu)
+
 root.config(menu=menubar)
 
 ###############################################
 # TOOLBAR
 ###############################################
-toolbar = tk.Frame(root, bg=BG_TOOLBAR)
+toolbar = tk.Frame(root, bg="#2d2d2d", height=32)
 toolbar.pack(fill="x")
-tk.Button(
-    toolbar,
-    text="▶ Executar",
-    command=run_minilang_from_gui,
-    bg="#0e639c",
-    fg="white",
-    relief="flat",
-    font=FONT_UI
-).pack(side="left", padx=10, pady=6)
+
+tk.Button(toolbar, text="▶ Executar", command=run_minilang_from_gui, bg="#0e639c", fg="white", relief="flat", font=FONT_UI, padx=10).pack(side="left", padx=10, pady=4)
+# Botão novo na Toolbar
+tk.Button(toolbar, text="🗑 Limpar Console", command=clear_console, bg="#333333", fg="white", relief="flat", font=FONT_UI, padx=10).pack(side="left", padx=5, pady=4)
+
+###############################################
+# ESTILO MODERNO (TTK)
+###############################################
+style = ttk.Style()
+style.theme_use("clam")
+style.configure("Treeview", background="#1e1e1e", foreground="#d4d4d4", fieldbackground="#1e1e1e", borderwidth=0, rowheight=24)
+style.map("Treeview", background=[("selected", "#264f78")])
+style.configure("TNotebook", background="#1e1e1e", borderwidth=0)
+style.configure("TNotebook.Tab", background="#2d2d2d", foreground="#cccccc", padding=[12,6])
+style.map("TNotebook.Tab", background=[("selected","#1e1e1e")], foreground=[("selected","white")])
 
 ###############################################
 # LAYOUT PRINCIPAL
@@ -951,111 +1236,88 @@ main = ttk.PanedWindow(root, orient=tk.HORIZONTAL)
 main.pack(fill="both", expand=True)
 
 ###############################################
-# EXPLORER DARK COM ARQUIVOS
+# BARRA DE ÍCONES (ESTILO VSCODE)
 ###############################################
-style = ttk.Style()
-style.theme_use("default")
-style.configure("Treeview",
-    background=BG_SIDEBAR,
-    foreground=TEXT_COLOR,
-    fieldbackground=BG_SIDEBAR,
-    borderwidth=0,
-    rowheight=22
-)
-style.map("Treeview",
-    background=[("selected","#094771")]
-)
-style.configure("Treeview.Heading",
-    background=BG_TOOLBAR,
-    foreground="white",
-    relief="flat"
-)
+icon_bar = tk.Frame(main, bg="#333333", width=50)
+main.add(icon_bar, weight=0)
 
+# Funções de efeito visual para os botões
+def on_enter(e): e.widget['bg'] = "#454545"
+def on_leave(e): e.widget['bg'] = "#333333"
+
+for icon in ["📁", "🔍", "⚙"]:
+    btn = tk.Button(icon_bar, text=icon, bg="#333333", fg="white", relief="flat", font=("Segoe UI", 16))
+    btn.pack(pady=12, fill="x")
+    btn.bind("<Enter>", on_enter)
+    btn.bind("<Leave>", on_leave)
+
+###############################################
+# EXPLORER
+###############################################
 explorer_frame = tk.Frame(main, bg=BG_SIDEBAR, width=250)
+
+title = tk.Label(explorer_frame, text="EXPLORER", bg=BG_SIDEBAR, fg="#cccccc", font=("Segoe UI",9,"bold"))
+title.pack(anchor="w", padx=10, pady=6)
+
 tree_scroll = tk.Scrollbar(explorer_frame)
 tree_scroll.pack(side="right", fill="y")
+
 tree = ttk.Treeview(explorer_frame, yscrollcommand=tree_scroll.set)
 tree.pack(fill="both", expand=True)
 tree_scroll.config(command=tree.yview)
-main.add(explorer_frame, weight=1)
 
-def load_folder(path="."):
-    tree.delete(*tree.get_children())
-    root_node = tree.insert(
-        "",
-        "end",
-        text=os.path.basename(os.path.abspath(path)),
-        open=True,
-        values=[path]
-    )
-    process_folder(root_node, path)
-
-def process_folder(parent, path):
-    try:
-        for item in os.listdir(path):
-            full = os.path.join(path,item)
-            node = tree.insert(parent, "end", text=item, values=[full])
-            if os.path.isdir(full):
-                process_folder(node, full)
-    except PermissionError:
-        pass
-
-def open_from_explorer(event):
-    item = tree.focus()
-    if not item: return
-    path = tree.item(item,"values")[0]
-    if os.path.isdir(path): return
-    try:
-        with open(path,"r",encoding="utf8") as f:
-            content=f.read()
-        create_editor(path,content)
-    except:
-        pass
-
+# BIND do Explorer
 tree.bind("<Double-1>", open_from_explorer)
 
+main.add(explorer_frame, weight=1)
+
 ###############################################
-# EDITOR AREA COM CONSOLE
+# EDITOR + CONSOLE
 ###############################################
 editor_area = ttk.PanedWindow(main, orient=tk.VERTICAL)
+
 tabs = ttk.Notebook(editor_area)
 tabs.pack(fill="both", expand=True)
+
 editor_area.add(tabs, weight=4)
 
-console = tk.Text(
-    editor_area,
-    height=10,
-    bg=BG_CONSOLE,
-    fg="#00ff9c",
-    font=("JetBrains Mono", 12)
-)
-editor_area.add(console, weight=1)
+# Melhoria no Console (adicionado um pequeno header)
+console_container = tk.Frame(editor_area, bg="#0f0f0f")
+console_label = tk.Label(console_container, text=" SAÍDA", bg="#252526", fg="#858585", font=("Segoe UI", 7), anchor="w")
+console_label.pack(fill="x")
+
+console = tk.Text(console_container, height=10, bg="#0f0f0f", fg="#00ff9c", insertbackground="white", font=("JetBrains Mono", 12), borderwidth=0, padx=10, pady=10)
+console.pack(fill="both", expand=True)
+
+editor_area.add(console_container, weight=1)
 main.add(editor_area, weight=4)
 
 ###############################################
-# STATUS BAR
+# STATUS BAR (Adicionado info de encoding)
 ###############################################
 status_var = tk.StringVar()
 status_var.set("Majoras IDE pronto")
-status = tk.Label(
-    root,
-    textvariable=status_var,
-    anchor="w",
-    bg="#007acc",
-    fg="white",
-    font=FONT_UI
-)
-status.pack(fill="x")
+
+status_frame = tk.Frame(root, bg="#181818")
+status_frame.pack(fill="x")
+
+status = tk.Label(status_frame, textvariable=status_var, anchor="w", bg="#181818", fg="#cccccc", font=FONT_UI, padx=10)
+status.pack(side="left")
+
+tk.Label(status_frame, text="UTF-8 | Majoras Language", bg="#181818", fg="#555555", font=FONT_UI, padx=10).pack(side="right")
 
 ###############################################
 # SHORTCUTS
 ###############################################
 root.bind("<F5>", run_minilang_from_gui)
 root.bind("<Control-s>", save_file)
+root.bind("<Control-n>", lambda e: new_file()) # Atalho para novo arquivo
+root.bind("<F6>", lambda e: clear_console()) 
 
 ###############################################
 # INICIALIZAÇÃO
 ###############################################
 create_editor()
 load_folder(".")
+
 root.mainloop()
