@@ -725,6 +725,50 @@ class Interpreter:
 
 
 ###############################################
+## EXECUÇÃO / RUNNER
+###############################################
+
+def executar_codigo_majoras(code):
+    tokens = lex(code)
+    parser = Parser(tokens)
+    program = parser.parse()
+
+    old_stdout = sys.stdout
+    sys.stdout = io.StringIO()
+
+    try:
+        Interpreter().run(program)
+        output = sys.stdout.getvalue()
+    finally:
+        sys.stdout = old_stdout
+
+    return output
+
+
+def executar_arquivo_majoras(caminho_arquivo):
+    with open(caminho_arquivo, "r", encoding="utf-8") as f:
+        code = f.read()
+    return executar_codigo_majoras(code)
+
+
+def repl():
+    print("Majoras REPL - digite 'sair' para encerrar")
+
+    while True:
+        try:
+            linha = input(">>> ")
+            if linha.strip().lower() == "sair":
+                break
+
+            saida = executar_codigo_majoras(linha)
+            if saida:
+                print(saida, end="")
+
+        except Exception as e:
+            print(f"Erro: {e}")
+
+
+###############################################
 ## MAIN – CÓDIGO DE TESTE
 ###############################################
 
@@ -1252,6 +1296,7 @@ for icon in ["📁", "🔍", "⚙"]:
     btn.pack(pady=12, fill="x")
     btn.bind("<Enter>", on_enter)
     btn.bind("<Leave>", on_leave)
+
 
 ###############################################
 # EXPLORER
