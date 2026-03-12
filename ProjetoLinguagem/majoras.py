@@ -13,7 +13,6 @@ from unicodedata import name
 
 from colorama import init
 
-# --- COLOQUE AQUI (Logo após as cores iniciais) ---
 THEMES = {
     "Dark (Padrão)": {
         "bg_main": "#1e1e1e", "bg_sidebar": "#252526", "bg_console": "#0f0f0f",
@@ -1124,7 +1123,7 @@ def save_file(event=None):
         f.write(editor["text"].get("1.0","end"))
 
 ###############################################
-# FUNÇÕES DO EXPLORER (Movi para cá para evitar erro de leitura)
+# FUNÇÕES DO EXPLORER DE ARQUIVOS
 ###############################################
 def process_folder(parent, path):
     try:
@@ -1158,7 +1157,6 @@ def clear_console():
     console.delete("1.0", "end")
     console.config(state="disabled")
     
-# --- COLOQUE ABAIXO DE clear_console() ---
 def change_theme(theme_name):
     global CURRENT_THEME
     CURRENT_THEME = theme_name
@@ -1199,7 +1197,6 @@ run_menu = tk.Menu(menubar, tearoff=0)
 run_menu.add_command(label="Executar (F5)", command=run_minilang_from_gui)
 menubar.add_cascade(label="Executar", menu=run_menu)
 
-# --- COLOQUE NA SEÇÃO DE MENU ---
 theme_menu = tk.Menu(menubar, tearoff=0)
 theme_menu.add_command(label="Dark (Padrão)", command=lambda: change_theme("Dark (Padrão)"))
 theme_menu.add_command(label="Dracula", command=lambda: change_theme("Dracula"))
