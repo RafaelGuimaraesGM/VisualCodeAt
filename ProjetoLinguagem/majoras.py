@@ -9,6 +9,7 @@ import tkinter as tk
 from tkinter import scrolledtext, messagebox
 import sys
 import io
+from turtle import left, right
 from unicodedata import name
 
 from colorama import init
@@ -554,6 +555,9 @@ class Interpreter:
             right = self.eval_expr(node.right)
 
             if node.op == "PLUS":
+                # concatenação se um dos lados for string
+                if isinstance(left, str) or isinstance(right, str):
+                    return str(left) + str(right)
                 return left + right
             if node.op == "MINUS":
                 return left - right
@@ -962,6 +966,7 @@ def highlight(text):
 ###############################################
 # EDITOR TABS
 ###############################################
+
 editors = {}
 
 def sync_scroll_lines_and_text(*args):
