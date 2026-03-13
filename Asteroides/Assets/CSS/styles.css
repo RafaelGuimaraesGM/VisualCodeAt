@@ -5,9 +5,10 @@ body {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    min-height: 400px;
-    background-color: black;
+    min-height: 100vh;
+    background: radial-gradient(circle at top, #081427 0%, #02050d 55%, #000000 100%);
     color: white;
+    overflow: hidden;
 }
 
 #telaJogo {
@@ -22,21 +23,133 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    margin-top: 20px;
+    gap: 12px;
+    margin-top: 14px;
     padding: 12px;
+    flex-wrap: wrap;
     font-size: 20px;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    z-index: 2;
 }
 
-#infoPontuacao, #infoVidas, #infoVelocidade {
+.divInfo {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+#infoPontuacao,
+#infoVidas,
+#infoVelocidade,
+#infoFase,
+#infoAsteroides,
+#infoArma {
     margin: 5px;
-    padding: 5px;
+    padding: 5px 8px;
     border: 1px solid #00ffff;
     box-shadow: 0 0 10px #00ffff;
-    background-color: black;
+    background-color: rgba(0, 0, 0, 0.7);
     font-size: 20px;
     text-shadow: 0 0 5px #00ffff;
     color: #00ffff;
+    border-radius: 4px;
+}
+
+#painelLegenda {
+    position: absolute;
+    top: 92px;
+    right: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    z-index: 2;
+}
+
+.painelBloco {
+    min-width: 220px;
+    padding: 12px 14px;
+    border: 1px solid rgba(0, 255, 255, 0.55);
+    border-radius: 10px;
+    background: rgba(3, 10, 18, 0.78);
+    box-shadow: 0 0 14px rgba(0, 255, 255, 0.18);
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.painelTitulo {
+    margin-bottom: 8px;
+    color: #92fcff;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.legendaLinha {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 6px 0;
+    font-size: 14px;
+    color: #d8feff;
+}
+
+.legendaDica {
+    margin-top: 10px;
+    font-size: 12px;
+    color: #96f5ff;
+}
+
+.swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    box-shadow: 0 0 6px currentColor;
+}
+
+.asteroide-padrao {
+    color: #c9c9c9;
+    background: #8d8d8d;
+}
+
+.asteroide-rapido {
+    color: #9ad6ff;
+    background: #6b89c8;
+}
+
+.asteroide-pesado {
+    color: #ffcc96;
+    background: #b27643;
+}
+
+.asteroide-fragmentado {
+    color: #bbffb8;
+    background: #5d8f61;
+}
+
+.arma-1 {
+    color: #8f59ff;
+    background: #6f39ff;
+}
+
+.arma-2 {
+    color: #5fd7ff;
+    background: #17c7ff;
+}
+
+.arma-3 {
+    color: #ff66d0;
+    background: #ff2dad;
+}
+
+.arma-4 {
+    color: #ffd56d;
+    background: #ffb700;
+}
+
+.arma-r {
+    color: #ff8a80;
+    background: #ff5449;
 }
 
 #mensagem {
@@ -46,15 +159,54 @@ body {
     left: 50%;
     transform: translate(-50%, -50%);
     z-index: 10;
-    margin-top: 20px;
-    margin-left: -100px;
-    padding: 10px 20px;
+    min-width: 280px;
+    padding: 16px 22px;
     border: 2px solid #00ffff;
     box-shadow: 0 0 15px #00ffff;
-    background-color: rgba(0, 0, 0, 0.664);
+    background-color: rgba(0, 0, 0, 0.76);
     font-size: 24px;
     text-align: center;
     font-weight: bold;
     text-shadow: 0 0 5px #00ffff;
     color: #00ffff;
+    border-radius: 10px;
+}
+
+#btnReiniciar {
+    margin-top: 14px;
+    padding: 10px 18px;
+    border: 1px solid #00ffff;
+    border-radius: 6px;
+    background: transparent;
+    box-shadow: 0 0 10px #00ffff;
+    color: #00ffff;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#btnReiniciar:hover {
+    background-color: rgba(0, 255, 255, 0.12);
+}
+
+#mensagem small {
+    display: block;
+    margin-top: 12px;
+    font-size: 14px;
+    color: #bafcff;
+}
+
+@media (max-width: 900px) {
+    #painelLegenda {
+        position: static;
+        width: calc(100% - 24px);
+        margin: 0 12px 12px;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .painelBloco {
+        min-width: 260px;
+    }
 }
