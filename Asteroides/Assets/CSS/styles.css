@@ -13,16 +13,18 @@
 #jogoWrapper {
     position: relative;
     display: inline-block;
-    max-width: 100vw;
-    max-height: 92vh;
+    width: 1600px;
+    height: 900px;
+    max-width: calc(100vw - 32px);
+    max-height: calc(100vh - 40px);
 }
 
 #telaJogo {
     display: block;
+    width: 100%;
+    height: 100%;
     border: 2px solid #00ffff;
     box-shadow: 0 0 15px #00ffff;
-    max-width: 100vw;
-    max-height: 92vh;
 }
 
 #divContainer {
@@ -32,7 +34,6 @@
     display: flex;
     flex-direction: column;
     gap: 7px;
-    padding: 0;
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     z-index: 3;
 }
@@ -67,86 +68,103 @@
 #infoArma,
 #infoEfeitos {
     min-width: 54px;
-    padding: 0;
     font-size: 14px;
     text-align: right;
     color: #7fefff;
 }
 
-#painelLegenda {
+#btnInformacoesJogo {
     position: absolute;
     top: 18px;
-    right: 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    align-items: flex-end;
-    z-index: 3;
-}
-
-.painelBloco {
-    display: flex;
-    flex-direction: row-reverse;
-    align-items: stretch;
-    width: 30px;
-    min-height: 168px;
-    overflow: hidden;
-    border-radius: 14px 0 0 14px;
-    transition: width 0.22s ease;
-}
-
-.painelBloco:hover {
-    width: 348px;
-}
-
-.painelAba {
-    width: 38px;
-    min-width: 38px;
-    padding: 24px 0 4px;
-    box-sizing: border-box;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    writing-mode: vertical-rl;
-    transform: rotate(180deg);
-    font-size: 20px;
+    right: 18px;
+    z-index: 4;
+    padding: 8px 14px;
+    border: none;
+    border-radius: 10px;
+    background: #0b2230;
+    color: #c9fbff;
+    font-size: 14px;
     font-weight: 700;
-    letter-spacing: 0.04em;
-    color: #d9fbff;
-    background: #0c1c2a;
-    text-align: center;
-    line-height: 1;
-    border-radius: 14px 0 0 14px;
-    pointer-events: none;
+    cursor: pointer;
 }
 
-.painelConteudo {
-    width: 310px;
-    min-width: 310px;
-    min-height: 168px;
-    margin: 0;
-    padding: 14px 16px;
-    background: #061523;
-    border-left: 2px solid #18dfff;
-    border-radius: 14px 0 0 14px;
+#btnInformacoesJogo:hover {
+    background: #123244;
+}
+
+#mensagem,
+#painelEvento,
+#painelInformacoesJogo {
+    position: absolute;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+    padding: 18px 24px;
+    border-radius: 14px;
     box-sizing: border-box;
-    opacity: 0;
-    pointer-events: none;
-    transform: translateX(6px);
-    transition: opacity 0.18s ease, transform 0.22s ease;
-    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
-.painelBloco:hover .painelConteudo {
-    opacity: 1;
-    pointer-events: auto;
-    transform: translateX(0);
+#mensagem {
+    display: none;
+    top: 50%;
+    min-width: 280px;
+    max-width: min(620px, calc(100vw - 56px));
+    width: auto;
+    font-size: 24px;
+    text-align: center;
+    font-weight: bold;
+    color: #00ffff;
+}
+
+#painelEvento {
+    display: none;
+    top: 6%;
+    min-width: 280px;
+    max-width: min(620px, calc(100vw - 56px));
+    width: auto;
+    font-size: 20px;
+    text-align: center;
+    font-weight: 700;
+    color: #9ef6ff;
+}
+
+#mensagem,
+#painelEvento {
+    background: rgba(7, 17, 28, 0.66);
+    backdrop-filter: blur(5px);
+}
+
+#painelInformacoesJogo {
+    background: #07111c;
+}
+
+#painelInformacoesJogo {
+    display: none;
+    top: 50%;
+    width: min(980px, calc(100vw - 56px));
+    max-width: min(980px, calc(100vw - 56px));
+    color: #dffcff;
+}
+
+.painelCentralConteudo {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: start;
+    gap: 14px;
+    text-align: left;
+}
+
+.painelCentralBloco {
+    min-width: 0;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: #0b1b2a;
 }
 
 .painelTitulo {
     margin-bottom: 8px;
     color: #9defff;
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -165,12 +183,12 @@
 }
 
 .legendaDica {
-    margin-top: 10px;
-    font-size: 12px;
+    grid-column: 1 / -1;
+    margin-top: 4px;
+    font-size: 13px;
     line-height: 1.4;
     color: #bfefff;
-    word-break: break-word;
-    overflow-wrap: anywhere;
+    text-align: center;
 }
 
 .swatch {
@@ -194,25 +212,9 @@
 .power-escudo { background: #34cde6; }
 .power-tiro { background: #ffb703; }
 .power-vida { background: #ff477e; }
+.power-reparo { background: #46d47d; }
 .power-cadencia { background: #87d437; }
 .power-turbo { background: #ff7b00; }
-
-#mensagem {
-    display: none;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 10;
-    min-width: 280px;
-    padding: 16px 22px;
-    background-color: #07111c;
-    font-size: 24px;
-    text-align: center;
-    font-weight: bold;
-    color: #00ffff;
-    border-radius: 10px;
-}
 
 #btnReiniciar {
     margin-top: 14px;
@@ -230,7 +232,8 @@
     background-color: #123244;
 }
 
-#mensagem small {
+#mensagem small,
+#painelEvento small {
     display: block;
     margin-top: 12px;
     font-size: 14px;
@@ -239,7 +242,8 @@
 
 @media (max-width: 900px) {
     #jogoWrapper {
-        width: 100vw;
+        max-width: calc(100vw - 16px);
+        max-height: calc(100vh - 20px);
     }
 
     #divContainer {
@@ -251,32 +255,47 @@
         min-width: 148px;
     }
 
-    #painelLegenda {
-        position: static;
-        width: calc(100% - 24px);
-        margin: 0 12px 12px;
-        align-self: stretch;
+    #btnInformacoesJogo {
+        top: 10px;
+        right: 10px;
+        font-size: 13px;
+        padding: 7px 10px;
     }
 
-    .painelBloco {
-        width: 100%;
-        overflow: visible;
-    }
-
-    .painelBloco:hover {
-    width: 348px;
-}
-
-    .painelAba {
-        display: none;
-    }
-
-    .painelConteudo {
-        width: auto;
+    #mensagem,
+    #painelEvento,
+    #painelInformacoesJogo {
+        max-width: calc(100vw - 28px);
         min-width: 0;
-        opacity: 1;
-        pointer-events: auto;
-        transform: none;
-        border-left: none;
+        padding: 16px 18px;
+    }
+
+    #mensagem,
+    #painelEvento {
+        width: auto;
+    }
+
+    #painelInformacoesJogo {
+        width: calc(100vw - 28px);
+    }
+
+    #painelEvento {
+        top: 8%;
+        font-size: 18px;
+    }
+
+    .painelCentralConteudo {
+        grid-template-columns: 1fr;
     }
 }
+
+
+#painelInformacoesJogo {
+    z-index: 20;
+}
+
+
+
+
+
+

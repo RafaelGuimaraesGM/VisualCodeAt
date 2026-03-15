@@ -1,8 +1,11 @@
 ﻿// Referencias principais da interface do jogo.
 const telaJogo = document.getElementById("telaJogo");
+const jogoWrapper = document.getElementById("jogoWrapper");
 const ctxTela = telaJogo.getContext("2d");
 const infoPontuacao = document.getElementById("infoPontuacao");
 const infoVidas = document.getElementById("infoVidas");
+const infoHp = document.getElementById("infoHp");
+const infoHpPreenchimento = document.getElementById("infoHpPreenchimento");
 const infoVelocidade = document.getElementById("infoVelocidade");
 const infoFase = document.getElementById("infoFase");
 const infoAsteroides = document.getElementById("infoAsteroides");
@@ -13,9 +16,14 @@ const hudVelocidadeSecundario = document.getElementById("hudVelocidadeSecundario
 const hudArmaSecundario = document.getElementById("hudArmaSecundario");
 const hudEfeitosSecundario = document.getElementById("hudEfeitosSecundario");
 const areaMensagem = document.getElementById("mensagem");
+const painelEvento = document.getElementById("painelEvento");
+const botaoInformacoesJogo = document.getElementById("btnInformacoesJogo");
+const painelInformacoesJogo = document.getElementById("painelInformacoesJogo");
 
 // Quantidade total de estrelas usadas no fundo animado.
 const NUM_ESTRELAS = 450;
+const CANVAS_LARGURA = 1600;
+const CANVAS_ALTURA = 900;
 // Tamanho visual da nave do jogador.
 const TAMANHO_NAVE = 40;
 // Velocidade angular usada quando a nave gira.
@@ -35,13 +43,23 @@ const MAX_PROJETEIS = 18;
 // Distancia minima entre nave e spawn de novo asteroide.
 const DISTANCIA_SEGURA_SPAWN = 180;
 // Tempo da mensagem de transicao de fase em segundos.
-const TEMPO_TRANSICAO_FASE = 1.4;
+const TEMPO_TRANSICAO_FASE = 4;
 // Pontos necessarios para ganhar uma vida extra.
 const PONTOS_PARA_VIDA_EXTRA = 1000;
 // Chance base de um asteroide derrotado soltar power-up.
 const CHANCE_POWERUP = 0.17;
 // Tempo padrao dos power-ups temporarios em segundos.
 const DURACAO_POWERUP = 9;
+const DURACAO_INFO_EVENTO = 5000;
+const DURACAO_INFO_POWERUP = 3500;
+const DURACAO_ESCUDO_RENASCIMENTO = 2.5;
+const DURACAO_ANIMACAO_DESTRUICAO = 0.65;
+const MULTIPLICADOR_CAMERA_LENTA_FASE = 0.22;
+const DURACAO_PARTICULA_ASTEROIDE = 0.75;
+const DURACAO_MINI_EXPLOSAO_MISSIL = 0.35;
+const DURACAO_EXPLOSAO_BOSS = 1.2;
+const HP_MAX_NAVE = 10;
+const ORDEM_DESBLOQUEIO_ARMAS = ['pulso', 'rajada', 'plasma', 'perfurante', 'missil'];
 
 // Configuracao das armas selecionaveis.
 const ARMAS = {
@@ -110,7 +128,7 @@ const ARMAS = {
         tecla: "KeyR",
         velocidade: 5,
         raio: 6,
-        tempoVida: 2.8,
+        tempoVida: 4.6,
         cadenciaFrames: 40,
         tiros: 1,
         spread: 0,
@@ -128,19 +146,93 @@ const TIPOS_POWERUP = {
     tiroVelocidade: { nome: "Tiro Rapido", cor: "#ffd166", pesoRaridade: 34, raridade: "Comum" },
     cadencia: { nome: "Cadencia", cor: "#b2ff59", pesoRaridade: 28, raridade: "Incomum" },
     velocidadeNave: { nome: "Turbo", cor: "#ff9f43", pesoRaridade: 20, raridade: "Raro" },
+    reparo: { nome: "Reparo", cor: "#46d47d", pesoRaridade: 24, raridade: "Incomum" },
     escudo: { nome: "Escudo", cor: "#6be7ff", pesoRaridade: 12, raridade: "Epico" },
     vida: { nome: "Vida", cor: "#ff6b9a", pesoRaridade: 6, raridade: "Lendario" }
 };
 
+const CLASSES_NAVES_INIMIGAS = [
+    {
+        nome: 'Interceptora',
+        faixaMin: 10,
+        faixaMax: 13,
+        cor: 'rgba(255, 216, 128, 0.92)',
+        corBorda: 'rgba(255, 241, 196, 0.98)',
+        tamanho: 26,
+        vidaBase: 3,
+        velocidade: 2.2,
+        cadencia: 1.45,
+        tiros: 1,
+        dano: 1,
+        estiloProjetil: 'lanca',
+        pontos: 120,
+        perfil: 'interceptora'
+    },
+    {
+        nome: 'Artilheira',
+        faixaMin: 14,
+        faixaMax: 17,
+        cor: 'rgba(255, 143, 125, 0.92)',
+        corBorda: 'rgba(255, 215, 208, 0.98)',
+        tamanho: 32,
+        vidaBase: 4,
+        velocidade: 1.65,
+        cadencia: 1.1,
+        tiros: 2,
+        dano: 1,
+        estiloProjetil: 'plasma',
+        pontos: 165,
+        perfil: 'artilheira'
+    },
+    {
+        nome: 'Fantasma',
+        faixaMin: 18,
+        faixaMax: 21,
+        cor: 'rgba(127, 242, 219, 0.7)',
+        corBorda: 'rgba(220, 255, 246, 0.94)',
+        tamanho: 28,
+        vidaBase: 5,
+        velocidade: 2.05,
+        cadencia: 0.95,
+        tiros: 2,
+        dano: 1,
+        estiloProjetil: 'orbita',
+        pontos: 210,
+        perfil: 'fantasma'
+    },
+    {
+        nome: 'Aniquiladora',
+        faixaMin: 22,
+        faixaMax: 999,
+        cor: 'rgba(157, 174, 255, 0.92)',
+        corBorda: 'rgba(238, 241, 255, 0.98)',
+        tamanho: 36,
+        vidaBase: 6,
+        velocidade: 1.5,
+        cadencia: 0.82,
+        tiros: 3,
+        dano: 2,
+        estiloProjetil: 'pulso',
+        pontos: 260,
+        perfil: 'aniquiladora'
+    }
+];
+
 // Estado geral da partida.
 let pontuacao = 0;
 let vidas = 3;
+let hpNave = HP_MAX_NAVE;
 let ticks = CADENCIA_TIRO;
 let jogoAcabou = false;
 let jogoPausado = false;
 let timerID;
 let timeoutMensagemTemporaria;
+let timeoutPainelEvento;
+let painelInformacoesAberto = false;
 let estrelas = [];
+let planetasFundo = [];
+let galaxiasFundo = [];
+let deslocamentoParallaxNave = { x: 0, y: 0 };
 let projetis = [];
 let asteroides = [];
 let powerUps = [];
@@ -155,14 +247,45 @@ let faseEmTransicao = false;
 let tempoRestanteTransicaoFase = 0;
 let armaSelecionada = "pulso";
 let proximaVidaExtra = PONTOS_PARA_VIDA_EXTRA;
-let efeitosAtivos = { escudo: 0, tiroVelocidade: 0, cadencia: 0, velocidadeNave: 0 };
+let efeitosAtivos = { escudo: 0, escudoReinicio: 0, tiroVelocidade: 0, cadencia: 0, velocidadeNave: 0 };
 let hudSecundarioTemporizadores = { asteroides: 0, velocidade: 0, arma: 0, efeitos: 0 };
+let animacaoDestruicaoNave = null;
+let gameOverPendente = false;
+let animacaoExplosaoBoss = null;
+let particulasAsteroide = [];
+let miniExplosoesMissil = [];
+let projeteisBoss = [];
+let navesInimigas = [];
+let totalNavesInimigasFase = 0;
+let navesInimigasRestantesFase = 0;
+let tempoFase = 0;
+let spawnNaveInimigaApos = 6;
+let bossAtual = null;
+let bossSpawnadoNaFase = false;
+let bossDerrotadoNaFase = false;
 
 // Estado das teclas usadas no controle.
 const comandos = { teclaA: false, teclaD: false, teclaW: false, teclaS: false, teclaSpace: false };
 
-telaJogo.width = window.innerWidth;
-telaJogo.height = window.innerHeight;
+function configurarAreaJogo() {
+    telaJogo.width = CANVAS_LARGURA;
+    telaJogo.height = CANVAS_ALTURA;
+
+    if (!jogoWrapper) return;
+
+    const margemHorizontal = 32;
+    const margemVertical = 40;
+    const escala = Math.min(
+        (window.innerWidth - margemHorizontal) / CANVAS_LARGURA,
+        (window.innerHeight - margemVertical) / CANVAS_ALTURA,
+        1
+    );
+
+    jogoWrapper.style.width = `${Math.max(320, Math.round(CANVAS_LARGURA * escala))}px`;
+    jogoWrapper.style.height = `${Math.max(180, Math.round(CANVAS_ALTURA * escala))}px`;
+}
+
+configurarAreaJogo();
 
 // Classe da nave do jogador.
 class Nave {
@@ -256,6 +379,8 @@ class Nave {
         this.velocidade.y *= FRICCAO;
         this.x += this.velocidade.x;
         this.y += this.velocidade.y;
+        deslocamentoParallaxNave.x += this.velocidade.x;
+        deslocamentoParallaxNave.y += this.velocidade.y;
 
         if (this.estaAcelerando) {
             this.compriChama = Math.min(this.compriChama + 3, TAMANHO_NAVE * 2);
@@ -310,13 +435,33 @@ class Nave {
         ctxTela.restore();
 
         // O escudo temporario desenha um anel pulsante ao redor da nave.
-        if (efeitosAtivos.escudo > 0) {
+        const possuiEscudoPadrao = efeitosAtivos.escudo > 0;
+        const possuiEscudoReinicio = efeitosAtivos.escudoReinicio > 0;
+        if (possuiEscudoPadrao || possuiEscudoReinicio) {
             const pulso = 0.35 + (Math.sin(tempoJogo * 8) + 1) * 0.12;
+            const corEscudo = possuiEscudoReinicio ? "110, 255, 145" : "107, 231, 255";
+            const baseRaio = this.raio + 8 + pulso * 4;
+
             ctxTela.beginPath();
-            ctxTela.arc(this.x, this.y, this.raio + 8 + pulso * 4, 0, Math.PI * 2);
-            ctxTela.strokeStyle = `rgba(107, 231, 255, ${0.55 + pulso * 0.4})`;
-            ctxTela.lineWidth = 3;
+            ctxTela.arc(this.x, this.y, baseRaio, 0, Math.PI * 2);
+            ctxTela.strokeStyle = `rgba(${corEscudo}, ${0.55 + pulso * 0.35})`;
+            ctxTela.lineWidth = possuiEscudoReinicio ? 4 : 3;
             ctxTela.stroke();
+
+            if (possuiEscudoReinicio) {
+                // Camada extra para dar aparencia de distorcao no anel de respawn.
+                ctxTela.beginPath();
+                ctxTela.ellipse(this.x, this.y, baseRaio + 5, baseRaio - 3, tempoJogo * 2.2, 0, Math.PI * 2);
+                ctxTela.strokeStyle = `rgba(180, 255, 205, ${0.24 + pulso * 0.18})`;
+                ctxTela.lineWidth = 2;
+                ctxTela.stroke();
+
+                ctxTela.beginPath();
+                ctxTela.ellipse(this.x, this.y, baseRaio - 2, baseRaio + 4, -tempoJogo * 1.8, 0, Math.PI * 2);
+                ctxTela.strokeStyle = `rgba(110, 255, 145, ${0.18 + pulso * 0.14})`;
+                ctxTela.lineWidth = 1.5;
+                ctxTela.stroke();
+            }
         }
     }
 }
@@ -338,18 +483,22 @@ class Projetil {
         this.alvo = null;
     }
 
-    // O missil teleguiado procura o asteroide mais proximo.
+    // O missil teleguiado procura o alvo inimigo mais proximo.
     adquirirAlvo() {
-        if (!this.guiado || asteroides.length === 0) return;
+        if (!this.guiado) return;
 
         let menorDistancia = Infinity;
         let alvoMaisProximo = null;
+        const alvos = [...asteroides];
+        if (bossAtual) {
+            alvos.push(bossAtual);
+        }
 
-        asteroides.forEach((asteroide) => {
-            const distancia = Math.hypot(asteroide.x - this.x, asteroide.y - this.y);
+        alvos.forEach((alvo) => {
+            const distancia = Math.hypot(alvo.x - this.x, alvo.y - this.y);
             if (distancia < menorDistancia) {
                 menorDistancia = distancia;
-                alvoMaisProximo = asteroide;
+                alvoMaisProximo = alvo;
             }
         });
 
@@ -359,7 +508,7 @@ class Projetil {
     // Atualiza deslocamento e corrige rota quando o tiro e guiado.
     atualizar(deltaTempo) {
         if (this.guiado) {
-            if (!this.alvo || !asteroides.includes(this.alvo)) {
+            if (!this.alvo || (!asteroides.includes(this.alvo) && this.alvo !== bossAtual)) {
                 this.adquirirAlvo();
             }
 
@@ -399,7 +548,7 @@ class Projetil {
             ctxTela.beginPath();
             ctxTela.moveTo(this.x, this.y);
             ctxTela.lineTo(this.x - this.vel.x * 1.6, this.y - this.vel.y * 1.6);
-            ctxTela.strokeStyle = "rgba(255, 196, 135, 0.7)";
+            ctxTela.strokeStyle = 'rgba(255, 196, 135, 0.7)';
             ctxTela.lineWidth = 2;
             ctxTela.stroke();
         }
@@ -408,7 +557,685 @@ class Projetil {
     }
 }
 
-// Classe dos power-ups coletaveis que ficam boiando na tela.
+class ProjetilBoss {
+    constructor(x, y, velX, velY, raio, dano, estilo = 'pulso', opcoes = {}) {
+        this.x = x;
+        this.y = y;
+        this.vel = { x: velX, y: velY };
+        this.raio = raio;
+        this.dano = dano;
+        this.estilo = estilo;
+        this.guiado = opcoes.guiado ?? false;
+        this.velocidadeBase = Math.hypot(velX, velY) || 1;
+        this.tempoVida = opcoes.tempoVida ?? (estilo === 'lanca' ? 5.2 : estilo === 'missil' ? 2.2 : 4.4);
+    }
+
+    atualizar(deltaTempo) {
+        if (this.guiado && espaconave && !animacaoDestruicaoNave) {
+            const anguloAtual = Math.atan2(this.vel.y, this.vel.x);
+            const anguloAlvo = Math.atan2(espaconave.y - this.y, espaconave.x - this.x);
+            const diferenca = normalizarAngulo(anguloAlvo - anguloAtual);
+            const novoAngulo = anguloAtual + Math.max(-0.08, Math.min(0.08, diferenca));
+            this.vel.x = Math.cos(novoAngulo) * this.velocidadeBase;
+            this.vel.y = Math.sin(novoAngulo) * this.velocidadeBase;
+        }
+
+        this.x += this.vel.x;
+        this.y += this.vel.y;
+        this.tempoVida -= deltaTempo;
+    }
+
+    renderizar() {
+        ctxTela.save();
+        const angulo = Math.atan2(this.vel.y, this.vel.x);
+        ctxTela.translate(this.x, this.y);
+        ctxTela.rotate(angulo + Math.PI / 2);
+
+        if (this.estilo === 'plasma') {
+            ctxTela.beginPath();
+            ctxTela.arc(0, 0, this.raio * 1.1, 0, Math.PI * 2);
+            ctxTela.fillStyle = 'rgba(255, 120, 220, 0.88)';
+            ctxTela.fill();
+            ctxTela.beginPath();
+            ctxTela.arc(0, 0, this.raio * 0.55, 0, Math.PI * 2);
+            ctxTela.fillStyle = 'rgba(255, 225, 255, 0.9)';
+            ctxTela.fill();
+        } else if (this.estilo === 'lanca') {
+            ctxTela.beginPath();
+            ctxTela.moveTo(0, -this.raio * 1.65);
+            ctxTela.lineTo(this.raio * 0.72, this.raio * 1.05);
+            ctxTela.lineTo(-this.raio * 0.72, this.raio * 1.05);
+            ctxTela.closePath();
+            ctxTela.fillStyle = 'rgba(255, 190, 82, 0.95)';
+            ctxTela.fill();
+            ctxTela.beginPath();
+            ctxTela.moveTo(0, -this.raio * 0.9);
+            ctxTela.lineTo(this.raio * 0.35, this.raio * 0.65);
+            ctxTela.lineTo(-this.raio * 0.35, this.raio * 0.65);
+            ctxTela.closePath();
+            ctxTela.fillStyle = 'rgba(255, 244, 205, 0.92)';
+            ctxTela.fill();
+        } else if (this.estilo === 'orbita') {
+            ctxTela.beginPath();
+            ctxTela.arc(0, 0, this.raio, 0, Math.PI * 2);
+            ctxTela.fillStyle = 'rgba(110, 245, 205, 0.9)';
+            ctxTela.fill();
+            ctxTela.beginPath();
+            ctxTela.arc(0, 0, this.raio * 0.5, 0, Math.PI * 2);
+            ctxTela.fillStyle = 'rgba(225, 255, 245, 0.92)';
+            ctxTela.fill();
+            ctxTela.beginPath();
+            ctxTela.ellipse(0, 0, this.raio * 1.55, this.raio * 0.62, 0.25, 0, Math.PI * 2);
+            ctxTela.strokeStyle = 'rgba(170, 255, 232, 0.72)';
+            ctxTela.lineWidth = 1.5;
+            ctxTela.stroke();
+        } else if (this.estilo === 'missil') {
+            ctxTela.beginPath();
+            ctxTela.moveTo(0, -this.raio * 1.45);
+            ctxTela.lineTo(this.raio * 0.82, this.raio * 0.85);
+            ctxTela.lineTo(0, this.raio * 0.42);
+            ctxTela.lineTo(-this.raio * 0.82, this.raio * 0.85);
+            ctxTela.closePath();
+            ctxTela.fillStyle = 'rgba(255, 148, 110, 0.96)';
+            ctxTela.fill();
+            ctxTela.beginPath();
+            ctxTela.arc(0, -this.raio * 0.12, this.raio * 0.34, 0, Math.PI * 2);
+            ctxTela.fillStyle = 'rgba(255, 231, 184, 0.92)';
+            ctxTela.fill();
+            ctxTela.beginPath();
+            ctxTela.moveTo(-this.raio * 0.24, this.raio * 0.68);
+            ctxTela.lineTo(0, this.raio * 1.52);
+            ctxTela.lineTo(this.raio * 0.24, this.raio * 0.68);
+            ctxTela.closePath();
+            ctxTela.fillStyle = this.guiado ? 'rgba(130, 255, 210, 0.82)' : 'rgba(255, 201, 122, 0.82)';
+            ctxTela.fill();
+        } else {
+            ctxTela.beginPath();
+            ctxTela.arc(0, 0, this.raio, 0, Math.PI * 2);
+            ctxTela.fillStyle = 'rgba(255, 120, 110, 0.95)';
+            ctxTela.fill();
+            ctxTela.beginPath();
+            ctxTela.arc(0, 0, this.raio * 0.55, 0, Math.PI * 2);
+            ctxTela.fillStyle = 'rgba(255, 235, 180, 0.9)';
+            ctxTela.fill();
+        }
+        ctxTela.restore();
+    }
+}
+class BossInimigo {
+    constructor(fase) {
+        this.fase = fase;
+        this.classe = this.obterClasseBoss();
+        this.raio = (34 + Math.min(18, fase * 2.6)) * this.classe.raioEscala;
+        this.vidaMax = Math.round((14 + fase * 7) * this.classe.vidaEscala);
+        this.vida = this.vidaMax;
+        this.velocidade = (1 + fase * 0.04) * this.classe.velocidadeEscala;
+        this.intervaloTiro = Math.max(0.45, (1.6 - fase * 0.07) * this.classe.intervaloEscala);
+        this.tempoTiro = 1.1;
+        this.padraoDisparo = 0;
+        this.faseMovimento = Math.random() * Math.PI * 2;
+        this.rotacaoCanhao = 0;
+        this.inclinacaoCasco = 0;
+        this.velEntrada = { x: 0, y: 0 };
+        this.blendMovimento = 0;
+        this.tempoEntrada = 1.4 * this.classe.entradaEscala;
+        this.tempoEntradaMax = this.tempoEntrada;
+        this.tema = this.criarTema();
+        this.estiloProjetil = this.obterEstiloProjetil();
+        this.perfilCasco = this.criarPerfilCasco();
+        this.baseX = telaJogo.width * (0.25 + Math.random() * 0.5);
+        this.baseY = telaJogo.height * (0.2 + Math.random() * 0.35);
+        this.pontoAlvo = this.sortearPontoEntrada();
+        this.x = this.pontoAlvo.xInicial;
+        this.y = this.pontoAlvo.yInicial;
+        this.vertices = this.criarVertices();
+        this.aletas = this.criarAletas();
+    }
+
+    obterClasseBoss() {
+        const classes = [
+            {
+                id: 'interceptor',
+                nome: 'Interceptor',
+                projetil: 'pulso',
+                raioEscala: 0.94,
+                vidaEscala: 0.92,
+                velocidadeEscala: 1.24,
+                intervaloEscala: 0.86,
+                entradaEscala: 0.94,
+                propulsores: [-0.2, 0.2]
+            },
+            {
+                id: 'artilheiro',
+                nome: 'Artilheiro',
+                projetil: 'plasma',
+                raioEscala: 1.04,
+                vidaEscala: 1.08,
+                velocidadeEscala: 0.94,
+                intervaloEscala: 1.02,
+                entradaEscala: 1,
+                propulsores: [-0.3, 0.3]
+            },
+            {
+                id: 'couracado',
+                nome: 'Couracado',
+                projetil: 'lanca',
+                raioEscala: 1.18,
+                vidaEscala: 1.34,
+                velocidadeEscala: 0.82,
+                intervaloEscala: 1.14,
+                entradaEscala: 1.12,
+                propulsores: [-0.38, -0.13, 0.13, 0.38]
+            },
+            {
+                id: 'espectro',
+                nome: 'Espectro',
+                projetil: 'orbita',
+                raioEscala: 1.01,
+                vidaEscala: 1.02,
+                velocidadeEscala: 1.1,
+                intervaloEscala: 0.9,
+                entradaEscala: 0.98,
+                propulsores: [-0.24, 0.24]
+            }
+        ];
+        const classeBase = classes[(this.fase - 1) % classes.length];
+        const ciclo = Math.floor((this.fase - 1) / classes.length);
+        return {
+            ...classeBase,
+            ciclo,
+            intensidade: 1 + ciclo * 0.08
+        };
+    }
+
+    criarTema() {
+        const temas = {
+            interceptor: { casco: 'rgba(52, 91, 146, 0.92)', borda: 'rgba(178, 220, 255, 0.98)', nucleo: 'rgba(105, 240, 255, 0.92)', canhao: 'rgba(210, 245, 255, 0.95)', chama: 'rgba(82, 224, 255, 0.8)' },
+            artilheiro: { casco: 'rgba(94, 66, 142, 0.92)', borda: 'rgba(228, 196, 255, 0.98)', nucleo: 'rgba(255, 150, 238, 0.92)', canhao: 'rgba(243, 225, 255, 0.95)', chama: 'rgba(255, 135, 98, 0.8)' },
+            couracado: { casco: 'rgba(105, 76, 46, 0.92)', borda: 'rgba(255, 214, 164, 0.98)', nucleo: 'rgba(255, 188, 106, 0.92)', canhao: 'rgba(255, 238, 214, 0.95)', chama: 'rgba(255, 167, 72, 0.84)' },
+            espectro: { casco: 'rgba(56, 112, 92, 0.92)', borda: 'rgba(186, 255, 223, 0.98)', nucleo: 'rgba(126, 255, 202, 0.92)', canhao: 'rgba(225, 255, 240, 0.95)', chama: 'rgba(110, 255, 188, 0.82)' }
+        };
+        return temas[this.classe.id] || temas.interceptor;
+    }
+
+    obterEstiloProjetil() {
+        return this.classe.projetil;
+    }
+
+    criarPerfilCasco() {
+        const perfis = {
+            interceptor: { ponta: 1.34, corpo: 0.62, traseira: 0.42, asa: 1.02, aberturaAsa: 0.24, alturaTraseira: 0.98, deslocamentoCorpo: -0.1 },
+            artilheiro: { ponta: 1.18, corpo: 0.88, traseira: 0.58, asa: 0.82, aberturaAsa: 0.36, alturaTraseira: 0.92, deslocamentoCorpo: -0.24 },
+            couracado: { ponta: 1.06, corpo: 1.02, traseira: 0.76, asa: 0.58, aberturaAsa: 0.48, alturaTraseira: 0.8, deslocamentoCorpo: -0.34 },
+            espectro: { ponta: 1.24, corpo: 0.72, traseira: 0.52, asa: 0.9, aberturaAsa: 0.52, alturaTraseira: 0.88, deslocamentoCorpo: -0.18 }
+        };
+        return perfis[this.classe.id] || perfis.interceptor;
+    }
+
+    sortearPontoEntrada() {
+        const margem = this.raio + 90;
+        const lado = Math.floor(Math.random() * 4);
+        if (lado == 0) return { xInicial: -margem, yInicial: Math.random() * telaJogo.height };
+        if (lado == 1) return { xInicial: telaJogo.width + margem, yInicial: Math.random() * telaJogo.height };
+        if (lado == 2) return { xInicial: Math.random() * telaJogo.width, yInicial: -margem };
+        return { xInicial: Math.random() * telaJogo.width, yInicial: telaJogo.height + margem };
+    }
+
+    criarVertices() {
+        const perfil = this.perfilCasco;
+        const pontaFrontal = this.raio * (perfil.ponta + Math.random() * 0.1);
+        const corpo = this.raio * (perfil.corpo + Math.random() * 0.08);
+        const traseira = this.raio * (perfil.traseira + Math.random() * 0.08);
+        const asa = this.raio * (perfil.asa + Math.random() * 0.1);
+        return [
+            { x: 0, y: -pontaFrontal },
+            { x: corpo, y: this.raio * perfil.deslocamentoCorpo },
+            { x: asa, y: this.raio * perfil.aberturaAsa },
+            { x: traseira * 0.42, y: this.raio * perfil.alturaTraseira },
+            { x: -traseira * 0.42, y: this.raio * perfil.alturaTraseira },
+            { x: -asa, y: this.raio * perfil.aberturaAsa },
+            { x: -corpo, y: this.raio * perfil.deslocamentoCorpo }
+        ];
+    }
+
+    criarAletas() {
+        const perfil = this.perfilCasco;
+        const largura = this.raio * (0.48 + Math.random() * 0.2);
+        const altura = this.raio * (0.24 + Math.random() * 0.14);
+        const baseY = this.raio * (perfil.aberturaAsa * 0.7);
+        return [
+            [
+                { x: this.raio * 0.22, y: baseY * 0.5 },
+                { x: this.raio + largura * 0.12, y: baseY },
+                { x: this.raio * 0.52, y: baseY + altura }
+            ],
+            [
+                { x: -this.raio * 0.22, y: baseY * 0.5 },
+                { x: -(this.raio + largura * 0.12), y: baseY },
+                { x: -this.raio * 0.52, y: baseY + altura }
+            ]
+        ];
+    }
+
+    atualizar(deltaTempo) {
+        if (this.tempoEntrada > 0) {
+            const xAnterior = this.x;
+            const yAnterior = this.y;
+            this.tempoEntrada = Math.max(0, this.tempoEntrada - deltaTempo);
+            const progressoBruto = 1 - (this.tempoEntrada / this.tempoEntradaMax);
+            const progressoEntrada = 1 - Math.pow(1 - progressoBruto, 4);
+            this.x = this.pontoAlvo.xInicial + (this.baseX - this.pontoAlvo.xInicial) * progressoEntrada;
+            this.y = this.pontoAlvo.yInicial + (this.baseY - this.pontoAlvo.yInicial) * progressoEntrada;
+            this.velEntrada.x = this.x - xAnterior;
+            this.velEntrada.y = this.y - yAnterior;
+            this.rotacaoCanhao = Math.atan2(espaconave.y - this.y, espaconave.x - this.x);
+
+            const inclinacaoEntrada = Math.max(-0.24, Math.min(0.24, this.velEntrada.x * 0.08));
+            this.inclinacaoCasco += (inclinacaoEntrada - this.inclinacaoCasco) * 0.22;
+
+            if (this.tempoEntrada === 0) {
+                this.blendMovimento = 1.35;
+            }
+            return;
+        }
+
+        const xAnterior = this.x;
+        this.faseMovimento += deltaTempo * (0.8 + this.fase * 0.04);
+        const amplitudeXBase = this.classe.id === 'interceptor' ? 122 : this.classe.id === 'couracado' ? 76 : this.classe.id === 'espectro' ? 108 : 92;
+        const amplitudeYBase = this.classe.id === 'interceptor' ? 18 : this.classe.id === 'couracado' ? 34 : this.classe.id === 'espectro' ? 28 : 24;
+        const alvoX = this.baseX + Math.sin(this.faseMovimento * this.velocidade * (this.classe.id === 'interceptor' ? 0.52 : 0.35)) * Math.min(telaJogo.width * 0.18, amplitudeXBase + this.fase * 10);
+        const alvoY = this.baseY + Math.cos(this.faseMovimento * (this.classe.id === 'espectro' ? 1.65 : 1.3)) * (amplitudeYBase + Math.min(16, this.fase * 1.2));
+
+        if (this.blendMovimento > 0) {
+            const amortecimentoEntrada = Math.pow(0.955, deltaTempo * 60);
+            const progressoBlend = 1 - Math.min(1, this.blendMovimento / 1.35);
+            const influenciaAlvo = 0.028 + progressoBlend * 0.055;
+            this.x += this.velEntrada.x;
+            this.y += this.velEntrada.y;
+            this.velEntrada.x *= amortecimentoEntrada;
+            this.velEntrada.y *= amortecimentoEntrada;
+            this.x += (alvoX - this.x) * influenciaAlvo;
+            this.y += (alvoY - this.y) * influenciaAlvo;
+            this.blendMovimento = Math.max(0, this.blendMovimento - deltaTempo);
+        } else {
+            this.x += (alvoX - this.x) * 0.085;
+            this.y += (alvoY - this.y) * 0.085;
+        }
+
+        this.rotacaoCanhao = Math.atan2(espaconave.y - this.y, espaconave.x - this.x);
+        this.tempoTiro -= deltaTempo;
+
+        const movimentoX = this.x - xAnterior;
+        const inclinacaoBase = Math.sin(this.faseMovimento * 0.9) * 0.045;
+        const inclinacaoMovimento = Math.max(-0.22, Math.min(0.22, movimentoX * 0.075));
+        const inclinacaoAlvo = Math.abs(movimentoX) > 0.02 ? inclinacaoMovimento : inclinacaoBase;
+        this.inclinacaoCasco += (inclinacaoAlvo - this.inclinacaoCasco) * 0.16;
+
+        if (this.tempoTiro <= 0) {
+            this.atirar();
+            this.tempoTiro = this.intervaloTiro;
+        }
+    }
+
+    atirar() {
+        if (!espaconave || animacaoDestruicaoNave || this.tempoEntrada > 0) return;
+
+        const anguloBase = Math.atan2(espaconave.y - this.y, espaconave.x - this.x);
+        let velocidade = 4.8 + this.fase * 0.22;
+        let raioProjetil = 4 + Math.min(3, Math.floor(this.fase / 3));
+        let dano = this.fase >= 5 ? 2 : 1;
+        let quantidade = 1 + Math.min(4, Math.floor((this.fase - 1) / 2));
+        let espalhamento = quantidade === 1 ? 0 : 0.22;
+
+        if (this.classe.id === 'interceptor') {
+            velocidade += 1.4;
+            quantidade = Math.max(2, Math.min(5, quantidade));
+            espalhamento = 0.12;
+        } else if (this.classe.id === 'artilheiro') {
+            quantidade = Math.max(2, quantidade);
+            espalhamento = 0.28;
+            raioProjetil += 1;
+        } else if (this.classe.id === 'couracado') {
+            velocidade -= 0.35;
+            dano += 1;
+            raioProjetil += 2;
+            quantidade = Math.max(1, Math.ceil(quantidade * 0.6));
+            espalhamento = quantidade === 1 ? 0 : 0.16;
+        } else if (this.classe.id === 'espectro') {
+            velocidade += 0.6;
+            quantidade += 1;
+            espalhamento = 0.34;
+        }
+
+        if (this.fase >= 4 && this.padraoDisparo % 2 === 1) {
+            quantidade = Math.max(3, quantidade + (this.classe.id === 'couracado' ? 0 : 1));
+            espalhamento += 0.08;
+        }
+
+        if (this.fase >= 7 && this.padraoDisparo % 3 === 2) {
+            quantidade += this.classe.id === 'couracado' ? 1 : 2;
+            espalhamento = Math.max(0.18, espalhamento - 0.04);
+        }
+
+        for (let i = 0; i < quantidade; i++) {
+            const deslocamento = quantidade === 1 ? 0 : i - (quantidade - 1) / 2;
+            const angulo = anguloBase + deslocamento * espalhamento;
+            projeteisBoss.push(new ProjetilBoss(
+                this.x + Math.cos(angulo) * (this.raio + 8),
+                this.y + Math.sin(angulo) * (this.raio + 8),
+                Math.cos(angulo) * velocidade,
+                Math.sin(angulo) * velocidade,
+                raioProjetil,
+                dano,
+                this.estiloProjetil
+            ));
+        }
+
+        if (this.fase >= 10) {
+            const velocidadeMissil = 3.9 + Math.min(1.4, (this.fase - 10) * 0.08);
+            projeteisBoss.push(new ProjetilBoss(
+                this.x + Math.cos(anguloBase) * (this.raio + 10),
+                this.y + Math.sin(anguloBase) * (this.raio + 10),
+                Math.cos(anguloBase) * velocidadeMissil,
+                Math.sin(anguloBase) * velocidadeMissil,
+                Math.max(6, raioProjetil - 1),
+                Math.max(2, dano),
+                'missil',
+                {
+                    tempoVida: 1.6 + Math.min(1, (this.fase - 10) * 0.06),
+                    guiado: this.fase >= 15
+                }
+            ));
+        }
+
+        this.padraoDisparo++;
+    }
+
+    renderizarPropulsor() {
+        const intensidade = this.tempoEntrada > 0 ? 1.2 : 0.7 + (Math.sin(tempoJogo * 16 + this.fase) + 1) * 0.25;
+        const alturaChama = this.raio * (0.6 + intensidade * 0.42);
+        const larguraChama = this.raio * 0.2;
+        const traseiraY = this.raio * (this.perfilCasco.alturaTraseira + 0.06);
+        const propulsores = this.classe.propulsores.map((valor) => this.raio * valor);
+
+        propulsores.forEach((offsetX) => {
+            ctxTela.beginPath();
+            ctxTela.moveTo(offsetX - larguraChama, traseiraY);
+            ctxTela.lineTo(offsetX, traseiraY + alturaChama);
+            ctxTela.lineTo(offsetX + larguraChama, traseiraY);
+            ctxTela.closePath();
+            ctxTela.fillStyle = this.tema.chama;
+            ctxTela.fill();
+
+            ctxTela.beginPath();
+            ctxTela.moveTo(offsetX - larguraChama * 0.52, traseiraY + this.raio * 0.01);
+            ctxTela.lineTo(offsetX, traseiraY + alturaChama * 0.62);
+            ctxTela.lineTo(offsetX + larguraChama * 0.52, traseiraY + this.raio * 0.01);
+            ctxTela.closePath();
+            ctxTela.fillStyle = 'rgba(255, 245, 210, 0.82)';
+            ctxTela.fill();
+        });
+    }
+
+    renderizarDetalhesCasco() {
+        const brilho = 0.24 + (Math.sin(tempoJogo * 3 + this.fase) + 1) * 0.08;
+
+        if (this.classe.id === 'interceptor') {
+            ctxTela.beginPath();
+            ctxTela.moveTo(0, -this.raio * 0.78);
+            ctxTela.lineTo(this.raio * 0.18, this.raio * 0.06);
+            ctxTela.lineTo(0, this.raio * 0.22);
+            ctxTela.lineTo(-this.raio * 0.18, this.raio * 0.06);
+            ctxTela.closePath();
+            ctxTela.fillStyle = `rgba(165, 228, 255, ${brilho + 0.18})`;
+            ctxTela.fill();
+        } else if (this.classe.id === 'artilheiro') {
+            ctxTela.beginPath();
+            ctxTela.ellipse(0, this.raio * 0.04, this.raio * 0.34, this.raio * 0.18, 0, 0, Math.PI * 2);
+            ctxTela.fillStyle = `rgba(255, 175, 238, ${brilho + 0.26})`;
+            ctxTela.fill();
+            ctxTela.fillRect(-this.raio * 0.46, this.raio * 0.02, this.raio * 0.18, this.raio * 0.22);
+            ctxTela.fillRect(this.raio * 0.28, this.raio * 0.02, this.raio * 0.18, this.raio * 0.22);
+        } else if (this.classe.id === 'couracado') {
+            ctxTela.beginPath();
+            ctxTela.moveTo(-this.raio * 0.42, -this.raio * 0.08);
+            ctxTela.lineTo(0, -this.raio * 0.34);
+            ctxTela.lineTo(this.raio * 0.42, -this.raio * 0.08);
+            ctxTela.lineTo(this.raio * 0.32, this.raio * 0.32);
+            ctxTela.lineTo(-this.raio * 0.32, this.raio * 0.32);
+            ctxTela.closePath();
+            ctxTela.fillStyle = `rgba(255, 219, 156, ${brilho + 0.22})`;
+            ctxTela.fill();
+            ctxTela.beginPath();
+            ctxTela.moveTo(-this.raio * 0.2, -this.raio * 0.62);
+            ctxTela.lineTo(this.raio * 0.2, -this.raio * 0.62);
+            ctxTela.lineTo(0, -this.raio * 0.16);
+            ctxTela.closePath();
+            ctxTela.fillStyle = `rgba(255, 239, 206, ${brilho + 0.16})`;
+            ctxTela.fill();
+        } else {
+            ctxTela.beginPath();
+            ctxTela.ellipse(0, this.raio * 0.05, this.raio * 0.42, this.raio * 0.14, 0.12, 0, Math.PI * 2);
+            ctxTela.strokeStyle = `rgba(188, 255, 236, ${brilho + 0.24})`;
+            ctxTela.lineWidth = 1.8;
+            ctxTela.stroke();
+            ctxTela.beginPath();
+            ctxTela.arc(0, this.raio * 0.02, this.raio * 0.12, 0, Math.PI * 2);
+            ctxTela.fillStyle = `rgba(164, 255, 220, ${brilho + 0.22})`;
+            ctxTela.fill();
+        }
+    }
+
+    renderizar() {
+        const progressoEntrada = this.tempoEntrada > 0 ? 1 - (this.tempoEntrada / this.tempoEntradaMax) : 1;
+        const escala = 0.78 + progressoEntrada * 0.22;
+        const brilhoEntrada = this.tempoEntrada > 0 ? 0.22 + progressoEntrada * 0.28 : 0;
+
+        ctxTela.save();
+        ctxTela.translate(this.x, this.y);
+        ctxTela.rotate(this.inclinacaoCasco);
+        ctxTela.scale(escala, escala);
+
+        if (brilhoEntrada > 0) {
+            ctxTela.beginPath();
+            ctxTela.arc(0, 0, this.raio * (1.5 + brilhoEntrada), 0, Math.PI * 2);
+            ctxTela.fillStyle = `rgba(180, 240, 255, ${brilhoEntrada * 0.35})`;
+            ctxTela.fill();
+        }
+
+        this.renderizarPropulsor();
+
+        ctxTela.beginPath();
+        ctxTela.moveTo(this.vertices[0].x, this.vertices[0].y);
+        for (let i = 1; i < this.vertices.length; i++) {
+            ctxTela.lineTo(this.vertices[i].x, this.vertices[i].y);
+        }
+        ctxTela.closePath();
+        ctxTela.fillStyle = this.tema.casco;
+        ctxTela.strokeStyle = this.tema.borda;
+        ctxTela.lineWidth = 2.2;
+        ctxTela.fill();
+        ctxTela.stroke();
+        this.renderizarDetalhesCasco();
+
+        this.aletas.forEach((aleta) => {
+            ctxTela.beginPath();
+            ctxTela.moveTo(aleta[0].x, aleta[0].y);
+            ctxTela.lineTo(aleta[1].x, aleta[1].y);
+            ctxTela.lineTo(aleta[2].x, aleta[2].y);
+            ctxTela.closePath();
+            ctxTela.fillStyle = this.tema.casco;
+            ctxTela.globalAlpha = 0.9;
+            ctxTela.fill();
+            ctxTela.globalAlpha = 1;
+            ctxTela.stroke();
+        });
+
+        ctxTela.beginPath();
+        ctxTela.arc(0, -this.raio * 0.08, this.raio * 0.28, 0, Math.PI * 2);
+        ctxTela.fillStyle = this.tema.nucleo;
+        ctxTela.fill();
+
+        ctxTela.save();
+        ctxTela.rotate(this.rotacaoCanhao - this.inclinacaoCasco + Math.PI / 2);
+        ctxTela.fillStyle = this.tema.canhao;
+        ctxTela.fillRect(-4.5, -this.raio * 0.95, 9, this.raio * 0.7);
+        ctxTela.restore();
+
+        const larguraBarra = this.raio * 1.8;
+        const progressoVida = this.vida / this.vidaMax;
+        ctxTela.fillStyle = 'rgba(12, 22, 38, 0.92)';
+        ctxTela.fillRect(-larguraBarra / 2, -this.raio - 22, larguraBarra, 8);
+        ctxTela.fillStyle = 'rgba(255, 99, 132, 0.95)';
+        ctxTela.fillRect(-larguraBarra / 2, -this.raio - 22, larguraBarra * progressoVida, 8);
+        ctxTela.restore();
+    }
+
+    colideComCirculo(x, y, raio) {
+        return Math.hypot(this.x - x, this.y - y) <= this.raio + raio;
+    }
+}
+
+class NaveInimiga {
+    constructor(fase) {
+        this.fase = fase;
+        this.classe = obterClasseNaveInimiga(fase);
+        const ponto = sortearPontoEntradaHostil();
+        this.x = ponto.x;
+        this.y = ponto.y;
+        this.alvo = { x: Math.random() * telaJogo.width, y: telaJogo.height * (0.18 + Math.random() * 0.58) };
+        this.raio = this.classe.tamanho;
+        this.vidaMax = this.classe.vidaBase + Math.floor((fase - 10) / 3);
+        this.vida = this.vidaMax;
+        this.vel = { x: 0, y: 0 };
+        this.angulo = 0;
+        this.tempoTiro = 1.2 + Math.random() * 0.4;
+        this.pontos = this.classe.pontos + (fase - 10) * 12;
+    }
+    atualizar(deltaTempo) {
+        const dx = this.alvo.x - this.x;
+        const dy = this.alvo.y - this.y;
+        const dist = Math.hypot(dx, dy) || 1;
+        const acel = this.classe.velocidade * 0.03;
+        this.vel.x += (dx / dist) * acel;
+        this.vel.y += (dy / dist) * acel;
+        this.vel.x *= this.classe.perfil === 'interceptora' ? 0.978 : 0.968;
+        this.vel.y *= this.classe.perfil === 'interceptora' ? 0.978 : 0.968;
+        this.x += this.vel.x;
+        this.y += this.vel.y;
+        this.angulo = Math.atan2(this.vel.y || dy, this.vel.x || dx) + Math.PI / 2;
+        if (dist < 28) {
+            this.alvo = { x: Math.random() * telaJogo.width, y: telaJogo.height * (0.18 + Math.random() * 0.58) };
+        }
+        this.x = ajustarCoordenada(this.x, telaJogo.width);
+        this.y = ajustarCoordenada(this.y, telaJogo.height);
+        this.tempoTiro -= deltaTempo;
+        if (this.tempoTiro <= 0) {
+            this.atirar();
+            this.tempoTiro = Math.max(0.42, this.classe.cadencia - (this.fase - 10) * 0.015);
+        }
+    }
+    atirar() {
+        if (!espaconave || animacaoDestruicaoNave) return;
+        const base = Math.atan2(espaconave.y - this.y, espaconave.x - this.x);
+        const quantidade = this.classe.tiros;
+        const spread = this.classe.perfil === 'interceptora' ? 0.12 : this.classe.perfil === 'fantasma' ? 0.22 : 0.18;
+        const velocidade = 4.1 + (this.fase - 10) * 0.05 + (this.classe.perfil === 'interceptora' ? 0.8 : 0);
+        for (let i = 0; i < quantidade; i++) {
+            const deslocamento = quantidade === 1 ? 0 : i - (quantidade - 1) / 2;
+            const angulo = base + deslocamento * spread;
+            projeteisBoss.push(new ProjetilBoss(
+                this.x + Math.cos(angulo) * (this.raio + 6),
+                this.y + Math.sin(angulo) * (this.raio + 6),
+                Math.cos(angulo) * velocidade,
+                Math.sin(angulo) * velocidade,
+                this.classe.perfil === 'aniquiladora' ? 6 : 4.5,
+                this.classe.dano,
+                this.classe.estiloProjetil,
+                { tempoVida: this.classe.perfil === 'interceptora' ? 3.4 : 4.2 }
+            ));
+        }
+    }
+    receberDano(dano) {
+        this.vida = Math.max(0, this.vida - dano);
+    }
+    renderizar() {
+        ctxTela.save();
+        ctxTela.translate(this.x, this.y);
+        ctxTela.rotate(this.angulo);
+        const comprimentoChama = this.raio * (this.classe.perfil === 'interceptora' ? 0.85 : this.classe.perfil === 'aniquiladora' ? 0.68 : 0.74) * (0.85 + Math.random() * 0.35);
+        const larguraChama = this.raio * (this.classe.perfil === 'artilheira' ? 0.24 : 0.18);
+        ctxTela.beginPath();
+        ctxTela.moveTo(-larguraChama, this.raio * 0.86);
+        ctxTela.lineTo(0, this.raio * 0.86 + comprimentoChama);
+        ctxTela.lineTo(larguraChama, this.raio * 0.86);
+        ctxTela.closePath();
+        ctxTela.fillStyle = this.classe.perfil === 'fantasma' ? 'rgba(140, 255, 225, 0.72)' : 'rgba(255, 177, 96, 0.82)';
+        ctxTela.fill();
+        ctxTela.beginPath();
+        if (this.classe.perfil === 'interceptora') {
+            ctxTela.moveTo(0, -this.raio * 1.12);
+            ctxTela.lineTo(this.raio * 0.62, -this.raio * 0.1);
+            ctxTela.lineTo(this.raio * 0.24, this.raio * 0.34);
+            ctxTela.lineTo(this.raio * 0.86, this.raio * 0.78);
+            ctxTela.lineTo(0, this.raio * 0.28);
+            ctxTela.lineTo(-this.raio * 0.86, this.raio * 0.78);
+            ctxTela.lineTo(-this.raio * 0.24, this.raio * 0.34);
+            ctxTela.lineTo(-this.raio * 0.62, -this.raio * 0.1);
+        } else if (this.classe.perfil === 'artilheira') {
+            ctxTela.moveTo(0, -this.raio * 1.02);
+            ctxTela.lineTo(this.raio * 0.74, -this.raio * 0.2);
+            ctxTela.lineTo(this.raio * 0.94, this.raio * 0.36);
+            ctxTela.lineTo(this.raio * 0.44, this.raio * 0.84);
+            ctxTela.lineTo(-this.raio * 0.44, this.raio * 0.84);
+            ctxTela.lineTo(-this.raio * 0.94, this.raio * 0.36);
+            ctxTela.lineTo(-this.raio * 0.74, -this.raio * 0.2);
+        } else if (this.classe.perfil === 'fantasma') {
+            ctxTela.moveTo(0, -this.raio * 1.14);
+            ctxTela.lineTo(this.raio * 0.52, -this.raio * 0.24);
+            ctxTela.lineTo(this.raio * 0.98, this.raio * 0.08);
+            ctxTela.lineTo(this.raio * 0.42, this.raio * 0.88);
+            ctxTela.lineTo(0, this.raio * 0.48);
+            ctxTela.lineTo(-this.raio * 0.42, this.raio * 0.88);
+            ctxTela.lineTo(-this.raio * 0.98, this.raio * 0.08);
+            ctxTela.lineTo(-this.raio * 0.52, -this.raio * 0.24);
+        } else {
+            ctxTela.moveTo(0, -this.raio * 0.98);
+            ctxTela.lineTo(this.raio * 0.86, -this.raio * 0.22);
+            ctxTela.lineTo(this.raio * 0.78, this.raio * 0.72);
+            ctxTela.lineTo(this.raio * 0.22, this.raio * 0.96);
+            ctxTela.lineTo(-this.raio * 0.22, this.raio * 0.96);
+            ctxTela.lineTo(-this.raio * 0.78, this.raio * 0.72);
+            ctxTela.lineTo(-this.raio * 0.86, -this.raio * 0.22);
+        }
+        ctxTela.closePath();
+        ctxTela.fillStyle = this.classe.cor;
+        ctxTela.globalAlpha = this.classe.perfil === 'fantasma' ? 0.48 : 0.88;
+        ctxTela.fill();
+        ctxTela.globalAlpha = 1;
+        ctxTela.strokeStyle = this.classe.corBorda;
+        ctxTela.lineWidth = 2;
+        ctxTela.stroke();
+        ctxTela.beginPath();
+        if (this.classe.perfil === 'aniquiladora') {
+            ctxTela.rect(-this.raio * 0.28, -this.raio * 0.1, this.raio * 0.56, this.raio * 0.34);
+        } else {
+            ctxTela.arc(0, 0, this.raio * (this.classe.perfil === 'fantasma' ? 0.14 : 0.18), 0, Math.PI * 2);
+        }
+        ctxTela.fillStyle = this.classe.corBorda;
+        ctxTela.fill();
+        ctxTela.restore();
+        const larguraBarra = this.raio * 1.7;
+        const progressoVida = this.vida / this.vidaMax;
+        ctxTela.fillStyle = 'rgba(12, 22, 38, 0.92)';
+        ctxTela.fillRect(this.x - larguraBarra / 2, this.y - this.raio - 14, larguraBarra, 5);
+        ctxTela.fillStyle = this.classe.corBorda;
+        ctxTela.fillRect(this.x - larguraBarra / 2, this.y - this.raio - 14, larguraBarra * progressoVida, 5);
+    }
+    colideComCirculo(x, y, raio) {
+        return Math.hypot(this.x - x, this.y - y) <= this.raio + raio;
+    }
+}
 class PowerUp {
     // Cada item tem um tipo, uma cor e um tempo limite de existencia.
     constructor(x, y, tipo) {
@@ -448,14 +1275,13 @@ class PowerUp {
         ctxTela.fillStyle = this.config.cor;
         ctxTela.globalAlpha = Math.min(1, brilho);
         ctxTela.fill();
-        ctxTela.strokeStyle = "rgba(255, 255, 255, 0.85)";
+        ctxTela.strokeStyle = 'rgba(255, 255, 255, 0.85)';
         ctxTela.lineWidth = 2;
         ctxTela.stroke();
         ctxTela.restore();
     }
 }
 
-// Classe dos asteroides inimigos com suporte a subtipos.
 class Asteroide {
     // Cada subtipo altera cor, vida, velocidade, rotacao e pontuacao.
     constructor(x, y, tamanho, velX, velY, subtipo = "padrao") {
@@ -494,10 +1320,10 @@ class Asteroide {
     }
 
     // Atualiza movimento e rotacao do asteroide.
-    atualizar() {
-        this.x += this.vel.x;
-        this.y += this.vel.y;
-        this.angulo += this.velocRotacao;
+    atualizar(multiplicadorTempo = 1) {
+        this.x += this.vel.x * multiplicadorTempo;
+        this.y += this.vel.y * multiplicadorTempo;
+        this.angulo += this.velocRotacao * multiplicadorTempo;
         this.x = ajustarCoordenada(this.x, telaJogo.width);
         this.y = ajustarCoordenada(this.y, telaJogo.height);
     }
@@ -547,29 +1373,217 @@ class Asteroide {
     }
 }
 
+function criarParticulasDestruicaoAsteroide(asteroide) {
+    const quantidade = Math.max(8, Math.round(asteroide.tamanho / 7));
+    for (let i = 0; i < quantidade; i++) {
+        const angulo = Math.random() * Math.PI * 2;
+        const velocidade = 0.8 + Math.random() * (asteroide.tamanho / 24);
+        const tempoMax = DURACAO_PARTICULA_ASTEROIDE + Math.random() * 0.25;
+        particulasAsteroide.push({
+            x: asteroide.x,
+            y: asteroide.y,
+            velX: Math.cos(angulo) * velocidade,
+            velY: Math.sin(angulo) * velocidade,
+            raio: Math.max(1.2, asteroide.tamanho / 26 + Math.random() * 1.4),
+            tempoVida: tempoMax,
+            tempoMax,
+            cor: asteroide.configuracao.corStroke
+        });
+    }
+}
+
+function atualizarParticulasAsteroide(deltaTempo) {
+    for (let i = particulasAsteroide.length - 1; i >= 0; i--) {
+        const particula = particulasAsteroide[i];
+        particula.x += particula.velX;
+        particula.y += particula.velY;
+        particula.velX *= 0.98;
+        particula.velY *= 0.98;
+        particula.tempoVida -= deltaTempo;
+
+        if (particula.tempoVida <= 0) {
+            particulasAsteroide.splice(i, 1);
+        }
+    }
+}
+
+function renderizarParticulasAsteroide() {
+    particulasAsteroide.forEach((particula) => {
+        const alpha = Math.max(0, particula.tempoVida / particula.tempoMax);
+        ctxTela.beginPath();
+        ctxTela.arc(particula.x, particula.y, particula.raio, 0, Math.PI * 2);
+        ctxTela.fillStyle = `rgba(220, 235, 255, ${alpha * 0.8})`;
+        ctxTela.fill();
+    });
+}
+
+function criarMiniExplosaoMissil(x, y, raioBase = 18) {
+    miniExplosoesMissil.push({
+        x,
+        y,
+        raioBase,
+        tempoVida: DURACAO_MINI_EXPLOSAO_MISSIL,
+        tempoMax: DURACAO_MINI_EXPLOSAO_MISSIL
+    });
+}
+
+function atualizarMiniExplosoesMissil(deltaTempo) {
+    for (let i = miniExplosoesMissil.length - 1; i >= 0; i--) {
+        miniExplosoesMissil[i].tempoVida -= deltaTempo;
+        if (miniExplosoesMissil[i].tempoVida <= 0) {
+            miniExplosoesMissil.splice(i, 1);
+        }
+    }
+}
+
+function renderizarMiniExplosoesMissil() {
+    miniExplosoesMissil.forEach((explosao) => {
+        const progresso = 1 - (explosao.tempoVida / explosao.tempoMax);
+        const raio = explosao.raioBase + progresso * 16;
+        const alpha = Math.max(0, 0.9 - progresso * 0.9);
+
+        ctxTela.beginPath();
+        ctxTela.arc(explosao.x, explosao.y, raio * 0.45, 0, Math.PI * 2);
+        ctxTela.fillStyle = `rgba(255, 240, 190, ${alpha})`;
+        ctxTela.fill();
+
+        ctxTela.beginPath();
+        ctxTela.arc(explosao.x, explosao.y, raio, 0, Math.PI * 2);
+        ctxTela.strokeStyle = `rgba(255, 145, 85, ${Math.max(0, alpha * 0.75)})`;
+        ctxTela.lineWidth = 3;
+        ctxTela.stroke();
+    });
+}
+
+function criarBossDaFase() {
+    bossAtual = new BossInimigo(faseAtual);
+    bossSpawnadoNaFase = true;
+    bossDerrotadoNaFase = false;
+    projeteisBoss = [];
+    resetarComandos();
+    ativarHudSecundario('asteroides', 5);
+    mostrarMensagemTemporaria(`Boss ${bossAtual.classe.nome} detectado!<br><small>Fase ${faseAtual}: prepare-se para o confronto</small>`, DURACAO_INFO_EVENTO);
+}
+
+function criarExplosaoBoss(boss) {
+    animacaoExplosaoBoss = {
+        x: boss.x,
+        y: boss.y,
+        tempoVida: DURACAO_EXPLOSAO_BOSS,
+        tempoMax: DURACAO_EXPLOSAO_BOSS,
+        estilo: boss.estiloProjetil,
+        tema: boss.tema,
+        fragmentos: Array.from({ length: 34 }, () => ({
+            angulo: Math.random() * Math.PI * 2,
+            distancia: 34 + Math.random() * 70,
+            raio: 3 + Math.random() * 4
+        }))
+    };
+}
+
+function atualizarExplosaoBoss(deltaTempo) {
+    if (!animacaoExplosaoBoss) return;
+    animacaoExplosaoBoss.tempoVida -= deltaTempo;
+    if (animacaoExplosaoBoss.tempoVida <= 0) {
+        animacaoExplosaoBoss = null;
+    }
+}
+
+function renderizarExplosaoBoss() {
+    if (!animacaoExplosaoBoss) return;
+
+    const progresso = 1 - (animacaoExplosaoBoss.tempoVida / animacaoExplosaoBoss.tempoMax);
+    const raioExterno = 28 + progresso * 90;
+    const alpha = Math.max(0, 1 - progresso);
+
+    ctxTela.save();
+    ctxTela.translate(animacaoExplosaoBoss.x, animacaoExplosaoBoss.y);
+
+    const estiloExplosao = animacaoExplosaoBoss.estilo || 'pulso';
+    const corInterna = estiloExplosao === 'plasma' ? `rgba(255, 150, 235, ${alpha * 0.52})` : estiloExplosao === 'lanca' ? `rgba(255, 216, 118, ${alpha * 0.52})` : estiloExplosao === 'orbita' ? `rgba(130, 255, 220, ${alpha * 0.5})` : `rgba(180, 240, 255, ${alpha * 0.55})`;
+    const corExterna = estiloExplosao === 'plasma' ? `rgba(255, 90, 210, ${alpha * 0.8})` : estiloExplosao === 'lanca' ? `rgba(255, 136, 72, ${alpha * 0.84})` : estiloExplosao === 'orbita' ? `rgba(110, 255, 210, ${alpha * 0.82})` : `rgba(255, 110, 110, ${alpha * 0.85})`;
+
+    ctxTela.beginPath();
+    ctxTela.arc(0, 0, raioExterno * 0.55, 0, Math.PI * 2);
+    ctxTela.fillStyle = corInterna;
+    ctxTela.fill();
+
+    ctxTela.beginPath();
+    ctxTela.arc(0, 0, raioExterno, 0, Math.PI * 2);
+    ctxTela.strokeStyle = corExterna;
+    ctxTela.lineWidth = 5;
+    ctxTela.stroke();
+
+    if (estiloExplosao === 'orbita') {
+        ctxTela.beginPath();
+        ctxTela.ellipse(0, 0, raioExterno * 1.18, raioExterno * 0.52, progresso * 1.4, 0, Math.PI * 2);
+        ctxTela.strokeStyle = `rgba(190, 255, 238, ${alpha * 0.55})`;
+        ctxTela.lineWidth = 2;
+        ctxTela.stroke();
+    }
+
+    animacaoExplosaoBoss.fragmentos.forEach((fragmento) => {
+        const distancia = progresso * fragmento.distancia;
+        const px = Math.cos(fragmento.angulo) * distancia;
+        const py = Math.sin(fragmento.angulo) * distancia;
+        ctxTela.beginPath();
+        ctxTela.arc(px, py, Math.max(1.5, fragmento.raio - progresso * 2.5), 0, Math.PI * 2);
+        ctxTela.fillStyle = `rgba(255, 170, 120, ${Math.max(0, alpha * 0.9)})`;
+        ctxTela.fill();
+    });
+
+    ctxTela.restore();
+}
+
+function atualizarBoss(deltaTempo) {
+    if (bossAtual && !faseEmTransicao) {
+        bossAtual.atualizar(deltaTempo);
+    }
+}
+
+function atualizarProjeteisBoss(deltaTempo) {
+    for (let i = projeteisBoss.length - 1; i >= 0; i--) {
+        const projetil = projeteisBoss[i];
+        projetil.atualizar(deltaTempo);
+        if (
+            projetil.tempoVida <= 0 ||
+            projetil.x < -40 ||
+            projetil.x > telaJogo.width + 40 ||
+            projetil.y < -40 ||
+            projetil.y > telaJogo.height + 40
+        ) {
+            projeteisBoss.splice(i, 1);
+        }
+    }
+}
+
 // Aplica o efeito do power-up coletado pela nave.
 function aplicarPowerUp(tipo) {
     ativarHudSecundario("efeitos", 4.5);
     switch (tipo) {
         case "escudo":
             efeitosAtivos.escudo = 8;
-            mostrarMensagemTemporaria("Escudo ativado!<br><small>Voce esta protegido por alguns segundos</small>");
+            mostrarMensagemTemporaria("Escudo ativado!<br><small>Voce esta protegido por alguns segundos</small>", DURACAO_INFO_POWERUP);
             break;
         case "tiroVelocidade":
             efeitosAtivos.tiroVelocidade = DURACAO_POWERUP;
-            mostrarMensagemTemporaria("Tiros acelerados!<br><small>Projetis estao mais velozes</small>");
+            mostrarMensagemTemporaria("Tiro Rapido coletado!<br><small>Projetis estao mais velozes</small>", DURACAO_INFO_POWERUP);
+            break;
+        case "reparo":
+            hpNave = Math.min(HP_MAX_NAVE, hpNave + 5);
+            mostrarMensagemTemporaria(`Reparo coletado!<br><small>HP restaurado para ${hpNave}/${HP_MAX_NAVE}</small>`, DURACAO_INFO_POWERUP);
             break;
         case "vida":
             vidas++;
-            mostrarMensagemTemporaria("Vida coletada!<br><small>Voce ganhou +1 vida</small>");
+            mostrarMensagemTemporaria("Vida coletada!<br><small>Voce ganhou +1 vida</small>", DURACAO_INFO_POWERUP);
             break;
         case "cadencia":
             efeitosAtivos.cadencia = DURACAO_POWERUP;
-            mostrarMensagemTemporaria("Cadencia aumentada!<br><small>Voce atira mais rapido</small>");
+            mostrarMensagemTemporaria("Cadencia aumentada!<br><small>Voce atira mais rapido</small>", DURACAO_INFO_POWERUP);
             break;
         case "velocidadeNave":
             efeitosAtivos.velocidadeNave = DURACAO_POWERUP;
-            mostrarMensagemTemporaria("Turbo ativado!<br><small>A nave esta mais agil</small>");
+            mostrarMensagemTemporaria("Turbo ativado!<br><small>A nave esta mais agil</small>", DURACAO_INFO_POWERUP);
             break;
     }
 
@@ -608,7 +1622,7 @@ function verificarVidaExtra() {
     while (pontuacao >= proximaVidaExtra) {
         vidas++;
         proximaVidaExtra += PONTOS_PARA_VIDA_EXTRA;
-        mostrarMensagemTemporaria(`Vida extra conquistada!<br><small>${vidas} vidas disponiveis</small>`);
+        mostrarMensagemTemporaria(`Vida extra conquistada!<br><small>${vidas} vidas disponiveis</small>`, DURACAO_INFO_POWERUP);
     }
 }
 
@@ -640,6 +1654,59 @@ function distanciaPontoSegmento(ponto, inicio, fim) {
     return Math.hypot(ponto.x - projX, ponto.y - projY);
 }
 
+function obterPaletaEspacialDaFase(fase) {
+    const paletas = [
+        { galaxia: ["255, 135, 214", "133, 205, 255"], planetas: [["94, 145, 255", "210, 236, 255"], ["255, 171, 92", "255, 228, 175"], ["176, 118, 255", "228, 213, 255"]] },
+        { galaxia: ["130, 255, 214", "90, 150, 255"], planetas: [["109, 220, 170", "220, 255, 233"], ["255, 120, 160", "255, 222, 232"], ["120, 178, 255", "230, 243, 255"]] },
+        { galaxia: ["255, 196, 118", "255, 118, 176"], planetas: [["255, 180, 118", "255, 233, 196"], ["95, 214, 255", "220, 245, 255"], ["220, 110, 255", "244, 220, 255"]] },
+        { galaxia: ["180, 185, 255", "130, 255, 210"], planetas: [["140, 120, 255", "225, 220, 255"], ["255, 156, 129", "255, 227, 210"], ["98, 255, 210", "220, 255, 244"]] }
+    ];
+    return paletas[(fase - 1) % paletas.length];
+}
+
+function criarGalaxiasDaFase(fase) {
+    const paleta = obterPaletaEspacialDaFase(fase);
+    galaxiasFundo = [{
+        x: Math.random() * telaJogo.width,
+        y: Math.random() * telaJogo.height * 0.7,
+        raio: 24 + Math.random() * 28,
+        corA: paleta.galaxia[0],
+        corB: paleta.galaxia[1],
+        angulo: Math.random() * Math.PI,
+        profundidade: 0.05 + Math.random() * 0.08
+    }];
+}
+
+function criarPlanetasDaFase(fase) {
+    const paleta = obterPaletaEspacialDaFase(fase);
+    const quantidade = 1 + Math.floor(Math.random() * 5);
+    planetasFundo = Array.from({ length: quantidade }, (_, indice) => {
+        const cores = paleta.planetas[indice % paleta.planetas.length];
+        return {
+            x: Math.random() * telaJogo.width,
+            y: Math.random() * telaJogo.height,
+            raio: 52 + Math.random() * 70,
+            corA: cores[0],
+            corB: cores[1],
+            profundidade: 0.012 + Math.random() * 0.022,
+            aneis: Math.random() > 0.58,
+            anguloAneis: Math.random() * Math.PI,
+            manchas: Array.from({ length: 3 + Math.floor(Math.random() * 4) }, () => ({
+                angulo: Math.random() * Math.PI * 2,
+                distancia: Math.random() * 0.48,
+                raio: 0.08 + Math.random() * 0.16,
+                alpha: 0.08 + Math.random() * 0.16
+            }))
+        };
+    });
+}
+
+function criarCenarioEspacialDaFase(fase = faseAtual) {
+    criarEstrelas();
+    criarGalaxiasDaFase(fase);
+    criarPlanetasDaFase(fase);
+}
+
 // Cria as estrelas do fundo com brilho e profundidade diferentes.
 function criarEstrelas() {
     estrelas = [];
@@ -664,8 +1731,73 @@ function renderEstrelas() {
     ctxTela.fillStyle = "#050816";
     ctxTela.fillRect(0, 0, telaJogo.width, telaJogo.height);
 
-    const offsetX = espaconave ? (espaconave.x - telaJogo.width / 2) : 0;
-    const offsetY = espaconave ? (espaconave.y - telaJogo.height / 2) : 0;
+    const offsetX = deslocamentoParallaxNave.x;
+    const offsetY = deslocamentoParallaxNave.y;
+
+    galaxiasFundo.forEach((galaxia) => {
+        let x = galaxia.x - offsetX * galaxia.profundidade;
+        let y = galaxia.y - offsetY * galaxia.profundidade;
+        x = ((x % telaJogo.width) + telaJogo.width) % telaJogo.width;
+        y = ((y % telaJogo.height) + telaJogo.height) % telaJogo.height;
+
+        ctxTela.save();
+        ctxTela.translate(x, y);
+        ctxTela.rotate(galaxia.angulo + tempoJogo * 0.03);
+        const gradiente = ctxTela.createRadialGradient(0, 0, galaxia.raio * 0.12, 0, 0, galaxia.raio);
+        gradiente.addColorStop(0, `rgba(${galaxia.corA}, 0.38)`);
+        gradiente.addColorStop(0.55, `rgba(${galaxia.corB}, 0.18)`);
+        gradiente.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctxTela.fillStyle = gradiente;
+        ctxTela.beginPath();
+        ctxTela.ellipse(0, 0, galaxia.raio * 1.35, galaxia.raio * 0.58, 0, 0, Math.PI * 2);
+        ctxTela.fill();
+        ctxTela.restore();
+    });
+
+    planetasFundo.forEach((planeta) => {
+        let x = planeta.x - offsetX * planeta.profundidade;
+        let y = planeta.y - offsetY * planeta.profundidade;
+        x = ((x % telaJogo.width) + telaJogo.width) % telaJogo.width;
+        y = ((y % telaJogo.height) + telaJogo.height) % telaJogo.height;
+
+        const gradientePlaneta = ctxTela.createRadialGradient(
+            x - planeta.raio * 0.28,
+            y - planeta.raio * 0.32,
+            planeta.raio * 0.12,
+            x,
+            y,
+            planeta.raio
+        );
+        gradientePlaneta.addColorStop(0, `rgba(${planeta.corB}, 0.96)`);
+        gradientePlaneta.addColorStop(0.7, `rgba(${planeta.corA}, 0.93)`);
+        gradientePlaneta.addColorStop(1, 'rgba(8, 12, 28, 0.85)');
+
+        ctxTela.beginPath();
+        ctxTela.arc(x, y, planeta.raio, 0, Math.PI * 2);
+        ctxTela.fillStyle = gradientePlaneta;
+        ctxTela.fill();
+
+        planeta.manchas.forEach((mancha) => {
+            const mx = x + Math.cos(mancha.angulo + tempoJogo * 0.03) * planeta.raio * mancha.distancia;
+            const my = y + Math.sin(mancha.angulo + tempoJogo * 0.03) * planeta.raio * mancha.distancia * 0.7;
+            ctxTela.beginPath();
+            ctxTela.arc(mx, my, planeta.raio * mancha.raio, 0, Math.PI * 2);
+            ctxTela.fillStyle = `rgba(255, 255, 255, ${mancha.alpha})`;
+            ctxTela.fill();
+        });
+
+        if (planeta.aneis) {
+            ctxTela.save();
+            ctxTela.translate(x, y);
+            ctxTela.rotate(planeta.anguloAneis);
+            ctxTela.beginPath();
+            ctxTela.ellipse(0, 0, planeta.raio * 1.45, planeta.raio * 0.36, 0, 0, Math.PI * 2);
+            ctxTela.strokeStyle = `rgba(${planeta.corB}, 0.42)`;
+            ctxTela.lineWidth = planeta.raio * 0.08;
+            ctxTela.stroke();
+            ctxTela.restore();
+        }
+    });
 
     estrelas.forEach((estrela) => {
         let x = estrela.x - offsetX * estrela.profundidade * 0.06;
@@ -692,30 +1824,83 @@ function renderEstrelas() {
 }
 
 // Renderiza a camada jogavel acima do fundo.
+function renderizarAnimacaoDestruicaoNave() {
+    if (!animacaoDestruicaoNave) return;
+
+    const progresso = 1 - (animacaoDestruicaoNave.tempoRestante / DURACAO_ANIMACAO_DESTRUICAO);
+    const raioExplosao = 16 + progresso * 54;
+    const intensidadeFlash = Math.max(0, 1 - progresso * 2.4);
+
+    ctxTela.save();
+    ctxTela.translate(animacaoDestruicaoNave.x, animacaoDestruicaoNave.y);
+
+    if (intensidadeFlash > 0) {
+        ctxTela.beginPath();
+        ctxTela.arc(0, 0, 20 + intensidadeFlash * 42, 0, Math.PI * 2);
+        ctxTela.fillStyle = `rgba(255, 248, 210, ${0.72 * intensidadeFlash})`;
+        ctxTela.fill();
+    }
+
+    animacaoDestruicaoNave.fragmentos.forEach((fragmento) => {
+        const distancia = progresso * fragmento.distancia;
+        const x = Math.cos(fragmento.angulo) * distancia;
+        const y = Math.sin(fragmento.angulo) * distancia;
+        const tamanho = Math.max(2, 9 - progresso * 5);
+
+        ctxTela.beginPath();
+        ctxTela.arc(x, y, tamanho, 0, Math.PI * 2);
+        ctxTela.fillStyle = `rgba(255, 120, 80, ${Math.max(0, 0.95 - progresso * 0.8)})`;
+        ctxTela.fill();
+    });
+
+    ctxTela.beginPath();
+    ctxTela.arc(0, 0, raioExplosao, 0, Math.PI * 2);
+    ctxTela.strokeStyle = `rgba(255, 220, 120, ${Math.max(0, 0.95 - progresso * 0.85)})`;
+    ctxTela.lineWidth = 4;
+    ctxTela.stroke();
+
+    ctxTela.beginPath();
+    ctxTela.arc(0, 0, Math.max(8, raioExplosao * 0.5), 0, Math.PI * 2);
+    ctxTela.fillStyle = `rgba(255, 255, 190, ${Math.max(0, 0.58 - progresso * 0.48)})`;
+    ctxTela.fill();
+    ctxTela.restore();
+}
+
 function renderizarEntidades() {
     powerUps.forEach((powerUp) => powerUp.renderizar());
     projetis.forEach((projetil) => projetil.renderizar());
+    projeteisBoss.forEach((projetil) => projetil.renderizar());
     asteroides.forEach((asteroide) => asteroide.renderizar());
-    if (espaconave) {
+    navesInimigas.forEach((nave) => nave.renderizar());
+    renderizarParticulasAsteroide();
+    renderizarMiniExplosoesMissil();
+    if (bossAtual) {
+        bossAtual.renderizar();
+    }
+    renderizarExplosaoBoss();
+    renderizarAnimacaoDestruicaoNave();
+    if (espaconave && !animacaoDestruicaoNave) {
         espaconave.renderizar();
     }
 }
-
-// Calcula o limite maximo de asteroides por fase.
 function calcularMaxAsteroidesPorFase(fase) {
-    return Math.min(15 + (fase - 1) * 5, 50);
+    return 15 + (fase - 1) * 5;
 }
 
 // Define quantos asteroides a fase precisa gerar no total.
 function calcularTotalAsteroidesDaFase(fase) {
-    const maxFase = calcularMaxAsteroidesPorFase(fase);
-    return Math.min(maxFase + 4 + Math.floor(fase * 1.5), 70);
+    return calcularMaxAsteroidesPorFase(fase);
+}
+
+function calcularTotalNavesInimigasFase(fase) {
+    if (fase < 10) return 0;
+    return Math.min(5, 1 + (fase - 10));
 }
 
 // Quantidade inicial que ja nasce em tela no inicio da fase.
 function calcularSpawnInicialDaFase() {
     const quantidade = 3 + Math.floor(Math.random() * 3);
-    return Math.min(quantidade, totalAsteroidesFase, calcularMaxAsteroidesPorFase(faseAtual));
+    return Math.min(quantidade, totalAsteroidesFase);
 }
 
 // Intervalo do spawn em segundos, mas baseado em um valor em ms por fase.
@@ -730,6 +1915,7 @@ function obterNovidadeDaFase(fase) {
     if (fase === 2) return "Liberado: asteroide rapido (azul)";
     if (fase === 3) return "Liberado: asteroide pesado (laranja)";
     if (fase === 4) return "Liberado: asteroide fragmentado (verde)";
+    if (fase === 10) return "Naves inimigas entraram na batalha";
     return "Mais asteroides e spawn mais intenso";
 }
 // Retorna a configuracao completa de cada subtipo de asteroide.
@@ -785,6 +1971,60 @@ function obterConfiguracaoSubtipo(subtipo) {
 }
 
 // Faz qualquer entidade reaparecer do outro lado da tela.
+function obterClasseNaveInimiga(fase) {
+    return CLASSES_NAVES_INIMIGAS.find((classe) => fase >= classe.faixaMin && fase <= classe.faixaMax) || CLASSES_NAVES_INIMIGAS[CLASSES_NAVES_INIMIGAS.length - 1];
+}
+function sortearPontoEntradaHostil() {
+    const margem = 80;
+    const lado = Math.floor(Math.random() * 4);
+    if (lado === 0) return { x: -margem, y: Math.random() * telaJogo.height };
+    if (lado === 1) return { x: telaJogo.width + margem, y: Math.random() * telaJogo.height };
+    if (lado === 2) return { x: Math.random() * telaJogo.width, y: -margem };
+    return { x: Math.random() * telaJogo.width, y: telaJogo.height + margem };
+}
+function criarExplosaoNaveInimiga(nave) {
+    const quantidade = Math.max(10, Math.round(nave.raio / 2));
+    for (let i = 0; i < quantidade; i++) {
+        const angulo = Math.random() * Math.PI * 2;
+        const velocidade = 0.9 + Math.random() * (nave.raio / 16);
+        const tempoMax = 0.45 + Math.random() * 0.35;
+        particulasAsteroide.push({
+            x: nave.x,
+            y: nave.y,
+            velX: Math.cos(angulo) * velocidade,
+            velY: Math.sin(angulo) * velocidade,
+            raio: 1.2 + Math.random() * 2.2,
+            tempoVida: tempoMax,
+            tempoMax,
+            cor: nave.classe.corBorda
+        });
+    }
+}
+function destruirNaveInimiga(indice, porColisao = false) {
+    const nave = navesInimigas[indice];
+    if (!nave) return;
+    pontuacao += nave.pontos;
+    criarExplosaoNaveInimiga(nave);
+    navesInimigas.splice(indice, 1);
+    ativarHudSecundario('asteroides', porColisao ? 2.8 : 3.6);
+}
+function criarNaveInimigaDaFase() {
+    if (navesInimigasRestantesFase <= 0) return;
+    const nave = new NaveInimiga(faseAtual);
+    navesInimigas.push(nave);
+    navesInimigasRestantesFase--;
+    ativarHudSecundario('asteroides', 4);
+    mostrarMensagemTemporaria(`Nave ${nave.classe.nome} detectada!<br><small>Elimine a ameaca inimiga</small>`, DURACAO_INFO_EVENTO);
+}
+function atualizarNavesInimigas(deltaTempo) {
+    navesInimigas.forEach((nave) => nave.atualizar(deltaTempo));
+    if (faseAtual < 10 || faseEmTransicao || bossAtual) return;
+    if (tempoFase < spawnNaveInimigaApos) return;
+    if (navesInimigas.length > 0) return;
+    if (navesInimigasRestantesFase <= 0) return;
+    criarNaveInimigaDaFase();
+    spawnNaveInimigaApos = tempoFase + 3.2;
+}
 function ajustarCoordenada(valor, limite) {
     if (valor < 0) return limite;
     if (valor > limite) return 0;
@@ -837,7 +2077,7 @@ function atualizarVisibilidadeHudSecundario(deltaTempo = 0) {
 
     const velocidadeAtual = espaconave ? Math.hypot(espaconave.velocidade.x, espaconave.velocidade.y) : 0;
     const mostrarVelocidade = hudSecundarioTemporizadores.velocidade > 0 || velocidadeAtual > 0.08 || comandos.teclaW || comandos.teclaS;
-    const mostrarAsteroides = hudSecundarioTemporizadores.asteroides > 0 || faseEmTransicao;
+    const mostrarAsteroides = hudSecundarioTemporizadores.asteroides > 0 || faseEmTransicao || bossAtual || navesInimigas.length > 0;
     const mostrarArma = hudSecundarioTemporizadores.arma > 0;
     const mostrarEfeitos = hudSecundarioTemporizadores.efeitos > 0 || Object.values(efeitosAtivos).some((valor) => valor > 0);
 
@@ -849,6 +2089,9 @@ function atualizarVisibilidadeHudSecundario(deltaTempo = 0) {
 
 // Atualiza no HUD o nome da arma selecionada.
 function atualizarInfoArma() {
+    if (!armaEstaDesbloqueada(armaSelecionada)) {
+        armaSelecionada = obterArmasDesbloqueadas()[0];
+    }
     infoArma.textContent = ARMAS[armaSelecionada].nome;
 }
 
@@ -856,16 +2099,36 @@ function atualizarInfoArma() {
 function atualizarInfoEfeitos() {
     const ativos = [];
     if (efeitosAtivos.escudo > 0) ativos.push(`Escudo ${efeitosAtivos.escudo.toFixed(1)}s`);
+    if (efeitosAtivos.escudoReinicio > 0) ativos.push(`Respawn ${efeitosAtivos.escudoReinicio.toFixed(1)}s`);
     if (efeitosAtivos.tiroVelocidade > 0) ativos.push(`Tiro ${efeitosAtivos.tiroVelocidade.toFixed(1)}s`);
     if (efeitosAtivos.cadencia > 0) ativos.push(`Cadencia ${efeitosAtivos.cadencia.toFixed(1)}s`);
     if (efeitosAtivos.velocidadeNave > 0) ativos.push(`Turbo ${efeitosAtivos.velocidadeNave.toFixed(1)}s`);
     infoEfeitos.textContent = ativos.length > 0 ? ativos.join(" | ") : "Nenhum";
 }
+function obterArmasDesbloqueadas(fase = faseAtual) {
+    const quantidade = Math.min(ORDEM_DESBLOQUEIO_ARMAS.length, 1 + Math.floor((fase - 1) / 2));
+    return ORDEM_DESBLOQUEIO_ARMAS.slice(0, quantidade);
+}
 
-// Troca a arma ativa pelas teclas 1, 2, 3, 4 e R.
+function armaEstaDesbloqueada(chaveArma, fase = faseAtual) {
+    return obterArmasDesbloqueadas(fase).includes(chaveArma);
+}
+
+function obterArmaDesbloqueadaNaFase(fase = faseAtual) {
+    if (fase <= 1 || fase % 2 === 0) return null;
+    return ORDEM_DESBLOQUEIO_ARMAS[Math.floor((fase - 1) / 2)] || null;
+}
+
+function obterMensagemArmaDesbloqueada(chaveArma) {
+    if (!chaveArma || !ARMAS[chaveArma]) return '';
+    const config = ARMAS[chaveArma];
+    return `Arma desbloqueada<br><small>${config.tecla.replace('Digit', '').replace('Key', '')} - ${config.nome}</small>`;
+}
+
 function selecionarArmaPorTecla(codigoTecla) {
     const arma = Object.entries(ARMAS).find(([, config]) => config.tecla === codigoTecla);
     if (!arma) return false;
+    if (!armaEstaDesbloqueada(arma[0])) return true;
     armaSelecionada = arma[0];
     atualizarInfoArma();
     ativarHudSecundario("arma", 3.2);
@@ -904,16 +2167,54 @@ function criarPowerUp(x, y) {
 }
 
 // Mostra uma mensagem temporaria no centro da tela.
-function mostrarMensagemTemporaria(texto, duracaoMs = 900) {
-    clearTimeout(timeoutMensagemTemporaria);
-    exibirMensagem(texto);
+function ocultarPainelEvento() {
+    clearTimeout(timeoutPainelEvento);
+    painelEvento.style.display = "none";
+    painelEvento.innerHTML = "";
+}
 
-    timeoutMensagemTemporaria = setTimeout(() => {
-        if (!jogoAcabou && !faseEmTransicao && !jogoPausado) {
-            areaMensagem.style.display = "none";
-            areaMensagem.innerHTML = "";
+function mostrarPainelEvento(texto, duracaoMs = DURACAO_INFO_EVENTO) {
+    if (!painelEvento || jogoAcabou) return;
+
+    clearTimeout(timeoutPainelEvento);
+    painelEvento.innerHTML = texto;
+    painelEvento.style.display = "block";
+
+    timeoutPainelEvento = setTimeout(() => {
+        if (!painelInformacoesAberto && !jogoAcabou) {
+            ocultarPainelEvento();
         }
     }, duracaoMs);
+}
+
+function obterMensagemPainelAsteroides() {
+    return "Asteroides<br><small>Cinza: 1 tiro | Azul: 2 tiros | Verde: 3 tiros | Laranja: 4 tiros</small>";
+}
+
+function obterMensagemPainelArmas() {
+    const armas = obterArmasDesbloqueadas().map((chave) => {
+        const arma = ARMAS[chave];
+        return `${arma.tecla.replace('Digit', '').replace('Key', '')} ${arma.nome}`;
+    });
+    return `Armas liberadas<br><small>${armas.join(' | ')}</small>`;
+}
+
+function alternarPainelInformacoesJogo(forcarAberto = null) {
+    if (!painelInformacoesJogo) return;
+
+    painelInformacoesAberto = typeof forcarAberto === "boolean" ? forcarAberto : !painelInformacoesAberto;
+    painelInformacoesJogo.style.display = painelInformacoesAberto ? "block" : "none";
+    if (botaoInformacoesJogo) {
+        botaoInformacoesJogo.classList.toggle("ativo", painelInformacoesAberto);
+    }
+
+    if (painelInformacoesAberto) {
+        ocultarPainelEvento();
+    }
+}
+
+function mostrarMensagemTemporaria(texto, duracaoMs = DURACAO_INFO_POWERUP) {
+    mostrarPainelEvento(texto, duracaoMs);
 }
 
 // Retorna a lista de subtipos ja desbloqueados pela fase.
@@ -983,13 +2284,25 @@ function registrarAsteroideGerado(quantidade) {
 // Reseta os dados da fase, cria o spawn inicial e mostra a transicao.
 function prepararFase(fase) {
     faseAtual = fase;
+    tempoFase = 0;
     totalAsteroidesFase = calcularTotalAsteroidesDaFase(faseAtual);
+    totalNavesInimigasFase = calcularTotalNavesInimigasFase(faseAtual);
+    navesInimigasRestantesFase = totalNavesInimigasFase;
+    spawnNaveInimigaApos = 6;
     asteroidesDestruidosFase = 0;
     asteroidesGeradosFase = 0;
     proximoSpawnAsteroide = 0;
     asteroides = [];
     projetis = [];
+    projeteisBoss = [];
     powerUps = [];
+    particulasAsteroide = [];
+    miniExplosoesMissil = [];
+    navesInimigas = [];
+    bossAtual = null;
+    animacaoExplosaoBoss = null;
+    bossSpawnadoNaFase = false;
+    bossDerrotadoNaFase = false;
     faseEmTransicao = true;
     tempoRestanteTransicaoFase = TEMPO_TRANSICAO_FASE;
     espaconave.reiniciarPosicao();
@@ -999,7 +2312,15 @@ function prepararFase(fase) {
     registrarAsteroideGerado(spawnInicial);
     proximoSpawnAsteroide = tempoJogo + calcularIntervaloSpawn();
 
+    criarCenarioEspacialDaFase(faseAtual);
     exibirMensagem(`Fase ${faseAtual}<br><small>${totalAsteroidesFase} asteroides nesta fase</small><br><small>${obterNovidadeDaFase(faseAtual)}</small>`);
+
+    const armaDesbloqueada = obterArmaDesbloqueadaNaFase(faseAtual);
+    if (armaDesbloqueada && !armaEstaDesbloqueada(armaDesbloqueada, faseAtual - 1)) {
+        mostrarPainelEvento(obterMensagemArmaDesbloqueada(armaDesbloqueada), DURACAO_INFO_EVENTO);
+    } else if (faseAtual === 1) {
+        mostrarPainelEvento(obterMensagemPainelAsteroides(), DURACAO_INFO_EVENTO);
+    }
 }
 
 // Continua gerando asteroides ate completar o total da fase.
@@ -1008,10 +2329,7 @@ function atualizarSpawnerAsteroides() {
     if (tempoJogo < proximoSpawnAsteroide) return;
     if (asteroidesGeradosFase >= totalAsteroidesFase) return;
 
-    const maxAsteroidesFase = calcularMaxAsteroidesPorFase(faseAtual);
-    if (asteroides.length >= maxAsteroidesFase) return;
-
-    const quantidade = Math.min(1 + Math.floor(faseAtual / 5), maxAsteroidesFase - asteroides.length, totalAsteroidesFase - asteroidesGeradosFase);
+    const quantidade = Math.min(1 + Math.floor(faseAtual / 5), totalAsteroidesFase - asteroidesGeradosFase);
     registrarAsteroideGerado(quantidade);
     proximoSpawnAsteroide = tempoJogo + calcularIntervaloSpawn();
 }
@@ -1023,11 +2341,8 @@ function gerarFragmentosAsteroide(asteroideOriginal) {
 
     const fragmentos = [];
     const quantidade = 2;
-    const maxAsteroidesFase = calcularMaxAsteroidesPorFase(faseAtual);
-    const vagasDisponiveis = Math.max(0, maxAsteroidesFase - asteroides.length);
-    const totalPermitido = Math.min(quantidade, vagasDisponiveis);
 
-    for (let i = 0; i < totalPermitido; i++) {
+    for (let i = 0; i < quantidade; i++) {
         const angulo = Math.random() * Math.PI * 2;
         const velocidade = 1.4 + Math.random() * 0.9;
         fragmentos.push(new Asteroide(asteroideOriginal.x, asteroideOriginal.y, asteroideOriginal.tamanho * 0.55, Math.cos(angulo) * velocidade, Math.sin(angulo) * velocidade, "rapido"));
@@ -1041,6 +2356,10 @@ function gerarFragmentosAsteroide(asteroideOriginal) {
 function aplicarDanoNoAsteroide(asteroide, indiceAsteroide, projetil, indiceProjetil) {
     asteroide.vida -= projetil.dano;
 
+    if (projetil.guiado) {
+        criarMiniExplosaoMissil(projetil.x, projetil.y, 14 + asteroide.tamanho * 0.12);
+    }
+
     if (!projetil.perfurante) {
         projetis.splice(indiceProjetil, 1);
     }
@@ -1050,10 +2369,11 @@ function aplicarDanoNoAsteroide(asteroide, indiceAsteroide, projetil, indiceProj
     }
 
     const posicaoAsteroide = { x: asteroide.x, y: asteroide.y };
+    criarParticulasDestruicaoAsteroide(asteroide);
     asteroides.splice(indiceAsteroide, 1);
     pontuacao += asteroide.configuracao.pontos;
     asteroidesDestruidosFase++;
-    ativarHudSecundario("asteroides", 3.5);
+    ativarHudSecundario('asteroides', 3.5);
     verificarVidaExtra();
     criarPowerUp(posicaoAsteroide.x, posicaoAsteroide.y);
 
@@ -1063,16 +2383,143 @@ function aplicarDanoNoAsteroide(asteroide, indiceAsteroide, projetil, indiceProj
     }
 }
 
+function aplicarDanoNoBoss(projetil, indiceProjetil) {
+    if (!bossAtual) return;
+
+    bossAtual.vida -= projetil.dano;
+    if (projetil.guiado) {
+        criarMiniExplosaoMissil(projetil.x, projetil.y, 22);
+    }
+
+    if (!projetil.perfurante) {
+        projetis.splice(indiceProjetil, 1);
+    }
+
+    if (bossAtual.vida > 0) {
+        return;
+    }
+
+    pontuacao += 180 + faseAtual * 45;
+    verificarVidaExtra();
+    criarExplosaoBoss(bossAtual);
+    bossAtual = null;
+    bossDerrotadoNaFase = true;
+    projeteisBoss = [];
+    mostrarMensagemTemporaria(`Boss derrotado!<br><small>Prepare-se para a fase ${faseAtual + 1}</small>`, DURACAO_INFO_EVENTO);
+}
+
+function consumirEscudoSeAtivo() {
+    if (efeitosAtivos.escudoReinicio > 0) {
+        return true;
+    }
+
+    if (efeitosAtivos.escudo > 0) {
+        efeitosAtivos.escudo = 0;
+        mostrarMensagemTemporaria('Escudo consumido!<br><small>Voce bloqueou um impacto</small>', DURACAO_INFO_POWERUP);
+        return true;
+    }
+
+    return false;
+}
+
+function aplicarDanoDeTiroNaNave(dano = 1) {
+    if (consumirEscudoSeAtivo()) {
+        atualizarInfoJogo();
+        return;
+    }
+
+    hpNave = Math.max(0, hpNave - dano);
+    ativarHudSecundario('efeitos', 2.5);
+    atualizarInfoJogo();
+
+    if (hpNave <= 0) {
+        perderVida();
+    }
+}
+
+function aplicarColisaoFatalNaNave() {
+    if (consumirEscudoSeAtivo()) {
+        atualizarInfoJogo();
+        return;
+    }
+
+    hpNave = 0;
+    atualizarInfoJogo();
+    perderVida();
+}
+
 // Verifica colisao entre projetis, asteroides, power-ups e a nave.
+function concluirRenascimentoNave() {
+    if (!espaconave) return;
+
+    if (gameOverPendente) {
+        animacaoDestruicaoNave = null;
+        executarGameOver();
+        return;
+    }
+
+    espaconave.reiniciarPosicao();
+    efeitosAtivos.escudoReinicio = DURACAO_ESCUDO_RENASCIMENTO;
+    hudSecundarioTemporizadores.efeitos = Math.max(hudSecundarioTemporizadores.efeitos, DURACAO_ESCUDO_RENASCIMENTO);
+    animacaoDestruicaoNave = null;
+    resetarComandos();
+}
+
+function atualizarAnimacaoDestruicaoNave(deltaTempo) {
+    if (!animacaoDestruicaoNave) return;
+
+    animacaoDestruicaoNave.tempoRestante = Math.max(0, animacaoDestruicaoNave.tempoRestante - deltaTempo);
+    if (animacaoDestruicaoNave.tempoRestante === 0) {
+        concluirRenascimentoNave();
+    }
+}
+
+function iniciarAnimacaoDestruicaoNave() {
+    if (!espaconave) return;
+
+    animacaoDestruicaoNave = {
+        x: espaconave.x,
+        y: espaconave.y,
+        tempoRestante: DURACAO_ANIMACAO_DESTRUICAO,
+        fragmentos: Array.from({ length: 20 }, () => ({
+            angulo: Math.random() * Math.PI * 2,
+            distancia: 22 + Math.random() * 38
+        }))
+    };
+}
+
 function verificarColisoes() {
+    if (animacaoDestruicaoNave) return;
+
     for (let i = projetis.length - 1; i >= 0; i--) {
         const projetil = projetis[i];
+        let acertou = false;
+
         for (let j = asteroides.length - 1; j >= 0; j--) {
             const asteroide = asteroides[j];
             if (asteroide.colideComCirculo(projetil.x, projetil.y, projetil.raio)) {
                 aplicarDanoNoAsteroide(asteroide, j, projetil, i);
+                acertou = true;
                 break;
             }
+        }
+
+        if (!acertou) {
+            for (let j = navesInimigas.length - 1; j >= 0; j--) {
+                const nave = navesInimigas[j];
+                if (nave.colideComCirculo(projetil.x, projetil.y, projetil.raio)) {
+                    nave.receberDano(projetil.dano);
+                    if (projetil.guiado) criarMiniExplosaoMissil(projetil.x, projetil.y, 16);
+                    if (!projetil.perfurante) projetis.splice(i, 1);
+                    if (nave.vida <= 0) destruirNaveInimiga(j);
+                    acertou = true;
+                    break;
+                }
+            }
+        }
+
+        if (!acertou && bossAtual && bossAtual.colideComCirculo(projetil.x, projetil.y, projetil.raio)) {
+            aplicarDanoNoBoss(projetil, i);
         }
     }
 
@@ -1080,25 +2527,48 @@ function verificarColisoes() {
         const asteroide = asteroides[j];
         if (asteroide.colideComCirculo(espaconave.x, espaconave.y, espaconave.raio * 0.8)) {
             asteroides.splice(j, 1);
+            criarParticulasDestruicaoAsteroide(asteroide);
+            aplicarColisaoFatalNaNave();
+            break;
+        }
+    }
 
-            if (efeitosAtivos.escudo > 0) {
-                efeitosAtivos.escudo = 0;
-                mostrarMensagemTemporaria("Escudo consumido!<br><small>Voce bloqueou um impacto</small>");
-                return;
-            }
+    for (let j = navesInimigas.length - 1; j >= 0; j--) {
+        const nave = navesInimigas[j];
+        if (nave.colideComCirculo(espaconave.x, espaconave.y, espaconave.raio * 0.82)) {
+            destruirNaveInimiga(j, true);
+            aplicarColisaoFatalNaNave();
+            return;
+        }
+    }
 
-            perderVida();
+    if (bossAtual && bossAtual.colideComCirculo(espaconave.x, espaconave.y, espaconave.raio * 0.9)) {
+        aplicarColisaoFatalNaNave();
+    }
+
+    for (let i = projeteisBoss.length - 1; i >= 0; i--) {
+        const projetil = projeteisBoss[i];
+        if (Math.hypot(projetil.x - espaconave.x, projetil.y - espaconave.y) <= projetil.raio + espaconave.raio * 0.7) {
+            projeteisBoss.splice(i, 1);
+            aplicarDanoDeTiroNaNave(projetil.dano);
             break;
         }
     }
 }
 
-// Avanca de fase quando tudo ja foi gerado e a tela esta limpa.
+
 function verificarProgressoFase() {
     if (faseEmTransicao || jogoAcabou) return;
 
-    const concluiuFase = asteroidesGeradosFase >= totalAsteroidesFase && asteroides.length === 0;
-    if (concluiuFase) {
+    const limpouAsteroides = asteroidesGeradosFase >= totalAsteroidesFase && asteroides.length === 0;
+    const limpouNavesInimigas = navesInimigas.length === 0 && navesInimigasRestantesFase <= 0;
+
+    if (limpouAsteroides && limpouNavesInimigas && !bossSpawnadoNaFase) {
+        criarBossDaFase();
+        return;
+    }
+
+    if (bossSpawnadoNaFase && bossDerrotadoNaFase && !bossAtual && !animacaoExplosaoBoss && projeteisBoss.length === 0) {
         prepararFase(faseAtual + 1);
     }
 }
@@ -1107,9 +2577,18 @@ function verificarProgressoFase() {
 function atualizarInfoJogo() {
     infoPontuacao.textContent = pontuacao;
     infoVidas.textContent = vidas;
+    if (infoHp) infoHp.textContent = `${hpNave}/${HP_MAX_NAVE}`;
+    if (infoHpPreenchimento) infoHpPreenchimento.style.width = `${(hpNave / HP_MAX_NAVE) * 100}%`;
     infoVelocidade.textContent = Math.round(Math.sqrt(espaconave.velocidade.x ** 2 + espaconave.velocidade.y ** 2) * 5000);
     infoFase.textContent = faseAtual;
-    infoAsteroides.textContent = `${asteroides.length}/${calcularMaxAsteroidesPorFase(faseAtual)}`;
+    if (bossAtual) {
+        infoAsteroides.textContent = `Boss ${bossAtual.vida}/${bossAtual.vidaMax}`;
+    } else if (faseAtual >= 10) {
+        const derrotadas = totalNavesInimigasFase - navesInimigasRestantesFase - navesInimigas.length;
+        infoAsteroides.textContent = `${asteroides.length}/${totalAsteroidesFase} | Naves ${Math.max(0, derrotadas)}/${totalNavesInimigasFase}`;
+    } else {
+        infoAsteroides.textContent = `${asteroides.length}/${totalAsteroidesFase}`;
+    }
     atualizarInfoArma();
     atualizarInfoEfeitos();
     atualizarVisibilidadeHudSecundario();
@@ -1117,16 +2596,17 @@ function atualizarInfoJogo() {
 
 // Remove uma vida e chama game over quando necessario.
 function perderVida() {
-    if (jogoAcabou) return;
+    if (jogoAcabou || animacaoDestruicaoNave) return;
 
+    hpNave = HP_MAX_NAVE;
     vidas = Math.max(vidas - 1, 0);
     atualizarInfoJogo();
 
     if (vidas <= 0) {
-        executarGameOver();
+        gameOverPendente = true;
+        iniciarAnimacaoDestruicaoNave();
     } else {
-        espaconave.reiniciarPosicao();
-        resetarComandos();
+        iniciarAnimacaoDestruicaoNave();
     }
 }
 
@@ -1138,13 +2618,21 @@ function exibirMensagem(texto) {
 
 // Encerra a partida e mostra a opcao de reinicio.
 function executarGameOver() {
+    gameOverPendente = false;
     jogoAcabou = true;
     jogoPausado = false;
     faseEmTransicao = false;
     tempoRestanteTransicaoFase = 0;
     projetis = [];
+    projeteisBoss = [];
+    navesInimigas = [];
     asteroides = [];
     powerUps = [];
+    particulasAsteroide = [];
+    miniExplosoesMissil = [];
+    navesInimigas = [];
+    bossAtual = null;
+    animacaoExplosaoBoss = null;
     espaconave.velocidade.x = 0;
     espaconave.velocidade.y = 0;
     resetarComandos();
@@ -1162,10 +2650,12 @@ function executarGameOver() {
 
 // Reinicia todos os estados principais da partida.
 function reiniciarJogo() {
+    gameOverPendente = false;
     clearTimeout(timerID);
     clearTimeout(timeoutMensagemTemporaria);
     pontuacao = 0;
     vidas = 3;
+    hpNave = HP_MAX_NAVE;
     ticks = CADENCIA_TIRO;
     tempoJogo = 0;
     jogoAcabou = false;
@@ -1173,18 +2663,29 @@ function reiniciarJogo() {
     faseEmTransicao = false;
     tempoRestanteTransicaoFase = 0;
     projetis = [];
+    projeteisBoss = [];
+    navesInimigas = [];
     asteroides = [];
     powerUps = [];
-    armaSelecionada = "pulso";
+    particulasAsteroide = [];
+    miniExplosoesMissil = [];
+    navesInimigas = [];
+    bossAtual = null;
+    animacaoExplosaoBoss = null;
+    bossSpawnadoNaFase = false;
+    bossDerrotadoNaFase = false;
+    armaSelecionada = 'pulso';
     proximaVidaExtra = PONTOS_PARA_VIDA_EXTRA;
-    efeitosAtivos = { escudo: 0, tiroVelocidade: 0, cadencia: 0, velocidadeNave: 0 };
+    efeitosAtivos = { escudo: 0, escudoReinicio: 0, tiroVelocidade: 0, cadencia: 0, velocidadeNave: 0 };
     hudSecundarioTemporizadores = { asteroides: 0, velocidade: 0, arma: 0, efeitos: 0 };
+    animacaoDestruicaoNave = null;
 
     resetarComandos();
     areaMensagem.style.display = "none";
     areaMensagem.innerHTML = "";
 
-    criarEstrelas();
+    criarCenarioEspacialDaFase(1);
+    deslocamentoParallaxNave = { x: 0, y: 0 };
     espaconave = new Nave(telaJogo.width / 2, telaJogo.height / 2);
     prepararFase(1);
     atualizarInfoJogo();
@@ -1234,6 +2735,7 @@ function executarLoop() {
     }
 
     tempoJogo += deltaTempo;
+    tempoFase += deltaTempo;
     ticks++;
     atualizarVisibilidadeHudSecundario(deltaTempo);
 
@@ -1246,21 +2748,33 @@ function executarLoop() {
         }
     }
 
-    if (comandos.teclaA) espaconave.rotacionarEsq();
-    if (comandos.teclaD) espaconave.rotacionarDir();
-    if (comandos.teclaW) espaconave.acelerarAtual();
-    if (comandos.teclaS) espaconave.desacelerarAtual();
-    if (comandos.teclaSpace && !faseEmTransicao) espaconave.atirar();
+    if (!animacaoDestruicaoNave) {
+        if (comandos.teclaA) espaconave.rotacionarEsq();
+        if (comandos.teclaD) espaconave.rotacionarDir();
+        if (comandos.teclaW) espaconave.acelerarAtual();
+        if (comandos.teclaS) espaconave.desacelerarAtual();
+        if (comandos.teclaSpace && !faseEmTransicao) espaconave.atirar();
+    }
 
     atualizarSpawnerAsteroides();
     atualizarPowerUpsAtivos(deltaTempo);
+    atualizarAnimacaoDestruicaoNave(deltaTempo);
     atualizarPowerUps(deltaTempo);
     atualizarProjetis(deltaTempo);
-    asteroides.forEach((asteroide) => asteroide.atualizar());
+    atualizarProjeteisBoss(deltaTempo);
+    atualizarParticulasAsteroide(deltaTempo);
+    atualizarMiniExplosoesMissil(deltaTempo);
+    atualizarExplosaoBoss(deltaTempo);
+    atualizarBoss(deltaTempo);
+    atualizarNavesInimigas(deltaTempo);
+    const multiplicadorAsteroides = faseEmTransicao ? MULTIPLICADOR_CAMERA_LENTA_FASE : 1;
+    asteroides.forEach((asteroide) => asteroide.atualizar(multiplicadorAsteroides));
 
     if (!faseEmTransicao) {
-        espaconave.atualizar();
-        verificarColisoes();
+        if (!animacaoDestruicaoNave) {
+            espaconave.atualizar();
+            verificarColisoes();
+        }
         verificarProgressoFase();
     }
 
@@ -1278,6 +2792,11 @@ function executarLoop() {
 
 // Evento de tecla pressionada.
 document.addEventListener("keydown", (tecla) => {
+    if (tecla.code === "KeyF" && painelInformacoesAberto) {
+        alternarPainelInformacoesJogo(false);
+        return;
+    }
+
     if (tecla.code === "Escape") {
         alternarPause();
         return;
@@ -1288,7 +2807,7 @@ document.addEventListener("keydown", (tecla) => {
         return;
     }
 
-    if (jogoPausado) return;
+    if (jogoPausado || painelInformacoesAberto) return;
 
     if (selecionarArmaPorTecla(tecla.code)) {
         return;
@@ -1334,19 +2853,18 @@ document.addEventListener("keyup", (tecla) => {
     }
 });
 
-// Atualiza o canvas quando a janela muda de tamanho.
+// Atualiza apenas a exibicao do jogo quando a janela muda de tamanho.
 window.addEventListener("resize", () => {
-    telaJogo.width = window.innerWidth;
-    telaJogo.height = window.innerHeight;
-    criarEstrelas();
-    if (espaconave) {
-        espaconave.reiniciarPosicao();
-    }
+    configurarAreaJogo();
 });
 
 // Ponto oficial de entrada do jogo.
 function iniciarJogo() {
-    reiniciarJogo();  
+    reiniciarJogo();
+}
+
+if (botaoInformacoesJogo) {
+    botaoInformacoesJogo.addEventListener("click", () => alternarPainelInformacoesJogo());
 }
 
 iniciarJogo();

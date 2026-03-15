@@ -15,6 +15,15 @@
                 <span class="infoRotulo">Pontuacao</span>
                 <span id="infoPontuacao">0</span>
             </div>
+            <div class="divInfo divInfoHp">
+                <span class="infoRotulo">HP</span>
+                <div class="hpBox">
+                    <div id="infoHpBarra" class="hpBarra">
+                        <div id="infoHpPreenchimento" class="hpPreenchimento"></div>
+                    </div>
+                    <span id="infoHp">10/10</span>
+                </div>
+            </div>
             <div class="divInfo">
                 <span class="infoRotulo">Vidas</span>
                 <span id="infoVidas">3</span>
@@ -41,40 +50,37 @@
             </div>
         </div>
 
-        <div id="painelLegenda">
-            <div class="painelBloco painelAsteroides">
-                <div class="painelAba">Asteroides</div>
-                <div class="painelConteudo">
+        <button id="btnInformacoesJogo" type="button">Informacoes do jogo</button>
+
+        <div id="painelEvento"></div>
+
+        <div id="painelInformacoesJogo">
+            <div class="painelCentralConteudo">
+                <div class="painelCentralBloco">
                     <div class="painelTitulo">Asteroides</div>
-                    <div class="legendaLinha"><span class="swatch asteroide-padrao"></span> Padrao: equilibrado</div>
-                    <div class="legendaLinha"><span class="swatch asteroide-rapido"></span> Rapido: azul, veloz</div>
-                    <div class="legendaLinha"><span class="swatch asteroide-pesado"></span> Pesado: laranja, mais vida</div>
-                    <div class="legendaLinha"><span class="swatch asteroide-fragmentado"></span> Fragmentado: verde, se divide</div>
+                    <div class="legendaLinha"><span class="swatch asteroide-padrao"></span> Padrao: cinza, destruido com 1 tiro</div>
+                    <div class="legendaLinha"><span class="swatch asteroide-rapido"></span> Rapido: azul, destruido com 2 tiros</div>
+                    <div class="legendaLinha"><span class="swatch asteroide-pesado"></span> Pesado: laranja, destruido com 4 tiros</div>
+                    <div class="legendaLinha"><span class="swatch asteroide-fragmentado"></span> Fragmentado: verde, destruido com 3 tiros</div>
                 </div>
-            </div>
-            <div class="painelBloco painelArmas">
-                <div class="painelAba">Armas</div>
-                <div class="painelConteudo">
+                <div class="painelCentralBloco">
                     <div class="painelTitulo">Armas</div>
                     <div class="legendaLinha"><span class="swatch arma-1"></span> 1: Pulso</div>
                     <div class="legendaLinha"><span class="swatch arma-2"></span> 2: Rajada</div>
                     <div class="legendaLinha"><span class="swatch arma-3"></span> 3: Plasma</div>
                     <div class="legendaLinha"><span class="swatch arma-4"></span> 4: Perfurante</div>
                     <div class="legendaLinha"><span class="swatch arma-r"></span> R: Missil teleguiado</div>
-                    <div class="legendaDica">Use Espaco para disparar a arma selecionada</div>
                 </div>
-            </div>
-            <div class="painelBloco painelPowerUps">
-                <div class="painelAba">Power-ups</div>
-                <div class="painelConteudo">
+                <div class="painelCentralBloco">
                     <div class="painelTitulo">Power-ups</div>
                     <div class="legendaLinha"><span class="swatch power-escudo"></span> Escudo: bloqueia 1 colisao | Epico</div>
                     <div class="legendaLinha"><span class="swatch power-tiro"></span> Tiro Rapido: projeteis mais velozes | Comum</div>
+                    <div class="legendaLinha"><span class="swatch power-reparo"></span> Reparo: recupera 5 de HP | Incomum</div>
                     <div class="legendaLinha"><span class="swatch power-vida"></span> Vida: +1 vida instantanea | Lendario</div>
                     <div class="legendaLinha"><span class="swatch power-cadencia"></span> Cadencia: atira mais rapido | Incomum</div>
                     <div class="legendaLinha"><span class="swatch power-turbo"></span> Turbo: nave mais agil | Raro</div>
-                    <div class="legendaDica">Pressione Esc para pausar ou continuar</div>
                 </div>
+                <div class="legendaDica">Pressione F para fechar</div>
             </div>
         </div>
 
@@ -84,3 +90,6 @@
     <script src="Assets\JS\game.js"></script>
 </body>
 </html>
+
+
+
