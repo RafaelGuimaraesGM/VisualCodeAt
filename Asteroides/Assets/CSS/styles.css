@@ -209,9 +209,11 @@
 .arma-3 { background: #ff2dad; }
 .arma-4 { background: #ffb700; }
 .arma-r { background: #ff5449; }
+.arma-5 { background: #52fff4; }
 .power-escudo { background: #34cde6; }
 .power-tiro { background: #ffb703; }
 .power-vida { background: #ff477e; }
+.power-missil { background: #52fff4; }
 .power-reparo { background: #46d47d; }
 .power-cadencia { background: #87d437; }
 .power-turbo { background: #ff7b00; }
@@ -299,3 +301,261 @@
 
 
 
+
+
+
+
+
+
+#hudHpContainer {
+    position: absolute;
+    left: 24px;
+    bottom: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 260px;
+    z-index: 9;
+}
+
+.hudHpTitulo {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1.1px;
+    text-transform: uppercase;
+    color: #8fe9ff;
+    text-shadow: 0 0 10px rgba(0, 255, 255, 0.18);
+}
+
+.hpBarraInferior {
+    position: relative;
+    width: 280px;
+    height: 22px;
+    border: 2px solid #4edfff;
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(6, 18, 34, 0.96) 0%, rgba(3, 9, 18, 0.98) 100%);
+    box-shadow: 0 0 18px rgba(0, 220, 255, 0.14), inset 0 0 12px rgba(0, 200, 255, 0.08);
+    overflow: hidden;
+}
+
+.hpPreenchimento {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #46d47d 0%, #7fffd4 100%);
+    box-shadow: 0 0 14px rgba(127, 255, 212, 0.25);
+    transition: width 180ms ease, background 180ms ease;
+}
+
+.hpTextoInferior {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    color: #f5fbff;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
+    z-index: 1;
+}
+
+.divInfoHp {
+    display: none;
+}
+
+#hudHpContainer {
+    min-width: 296px;
+}
+
+.hudHpTitulo {
+    font-size: 12px;
+    letter-spacing: 1.8px;
+}
+
+.hpBarraInferior {
+    width: 296px;
+    height: 28px;
+    padding: 3px;
+    border: 1px solid rgba(91, 240, 255, 0.9);
+    border-radius: 0;
+    clip-path: polygon(0 50%, 12px 0, calc(100% - 18px) 0, 100% 50%, calc(100% - 18px) 100%, 12px 100%);
+    background: linear-gradient(180deg, rgba(9, 24, 41, 0.98) 0%, rgba(3, 9, 19, 0.99) 100%);
+    box-shadow: 0 0 22px rgba(0, 220, 255, 0.16), inset 0 0 18px rgba(0, 180, 255, 0.08);
+}
+
+.hpBarraInferior::before {
+    content: '';
+    position: absolute;
+    inset: 4px 16px 4px 16px;
+    border-top: 1px solid rgba(143, 233, 255, 0.28);
+    border-bottom: 1px solid rgba(143, 233, 255, 0.12);
+    clip-path: polygon(0 50%, 10px 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 10px 100%);
+    pointer-events: none;
+}
+
+.hpBarraInferior::after {
+    content: '';
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    width: 26px;
+    height: 8px;
+    transform: translateY(-50%) skewX(-28deg);
+    background: linear-gradient(90deg, rgba(143, 233, 255, 0.12) 0%, rgba(143, 233, 255, 0.55) 100%);
+    box-shadow: 0 0 10px rgba(143, 233, 255, 0.18);
+    pointer-events: none;
+}
+
+.hpPreenchimento {
+    left: 3px;
+    top: 3px;
+    bottom: 3px;
+    width: calc(100% - 6px);
+    border-radius: 0;
+    clip-path: polygon(0 50%, 10px 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 10px 100%);
+    background: linear-gradient(90deg, #46d47d 0%, #7fffd4 55%, #a6fff2 100%);
+    box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.12), 0 0 14px rgba(127, 255, 212, 0.22);
+}
+
+.hpPreenchimento::after {
+    content: '';
+    position: absolute;
+    inset: 1px 12px 1px 12px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0.04) 60%, rgba(255, 255, 255, 0) 100%);
+    clip-path: polygon(0 50%, 8px 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 8px 100%);
+}
+
+.hpTextoInferior {
+    letter-spacing: 1px;
+}
+
+#hudHpContainer {
+    min-width: 308px;
+}
+
+.hudHpTitulo {
+    font-size: 12px;
+    letter-spacing: 2.2px;
+    color: #9fe7ff;
+}
+
+.hpBarraInferior {
+    width: 308px;
+    height: 30px;
+    padding: 3px;
+    border: 1px solid rgba(123, 230, 255, 0.9);
+    clip-path: polygon(0 50%, 16px 0, calc(100% - 28px) 0, 100% 50%, calc(100% - 28px) 100%, 16px 100%);
+    background: linear-gradient(180deg, rgba(12, 24, 38, 0.98) 0%, rgba(5, 10, 18, 0.99) 100%);
+    box-shadow: 0 0 24px rgba(0, 170, 220, 0.18), inset 0 0 22px rgba(80, 180, 255, 0.08);
+}
+
+.hpBarraInferior::before {
+    inset: 4px 20px 4px 20px;
+    border-top: 1px solid rgba(170, 235, 255, 0.26);
+    border-bottom: 1px solid rgba(170, 235, 255, 0.1);
+    clip-path: polygon(0 50%, 12px 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 12px 100%);
+}
+
+.hpBarraInferior::after {
+    right: 14px;
+    width: 34px;
+    height: 10px;
+    transform: translateY(-50%) skewX(-30deg);
+    background: linear-gradient(90deg, rgba(170, 235, 255, 0.08) 0%, rgba(170, 235, 255, 0.62) 100%);
+    box-shadow: 0 0 12px rgba(170, 235, 255, 0.2);
+}
+
+.hpPreenchimento {
+    left: 3px;
+    top: 3px;
+    bottom: 3px;
+    width: calc(100% - 6px);
+    clip-path: polygon(0 50%, 12px 0, calc(100% - 18px) 0, 100% 50%, calc(100% - 18px) 100%, 12px 100%);
+    background: linear-gradient(90deg, #2fa85f 0%, #57d98b 45%, #9effcf 100%);
+    box-shadow: inset 0 0 12px rgba(255, 255, 255, 0.1), 0 0 16px rgba(95, 220, 150, 0.2);
+}
+
+.hpPreenchimento::after {
+    inset: 1px 14px 1px 14px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.03) 55%, rgba(255, 255, 255, 0) 100%);
+    clip-path: polygon(0 50%, 9px 0, calc(100% - 9px) 0, 100% 50%, calc(100% - 9px) 100%, 9px 100%);
+}
+
+.hpTextoInferior {
+    font-size: 12px;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+}
+
+.hpBarraInferior {
+    background-image:
+        linear-gradient(180deg, rgba(12, 24, 38, 0.98) 0%, rgba(5, 10, 18, 0.99) 100%),
+        repeating-linear-gradient(90deg, transparent 0, transparent 28px, rgba(150, 220, 255, 0.08) 28px, rgba(150, 220, 255, 0.08) 30px);
+    background-blend-mode: normal;
+}
+
+.hpBarraInferior::before {
+    box-shadow: inset 0 0 0 1px rgba(120, 210, 255, 0.05);
+}
+
+.hpPreenchimento {
+    background-image:
+        linear-gradient(90deg, #2fa85f 0%, #57d98b 45%, #9effcf 100%),
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.06) 0, rgba(255, 255, 255, 0.06) 24px, rgba(255, 255, 255, 0.16) 24px, rgba(255, 255, 255, 0.16) 26px);
+    background-blend-mode: overlay;
+}
+
+.hpPreenchimento::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(90deg, transparent 0, transparent 24px, rgba(0, 0, 0, 0.16) 24px, rgba(0, 0, 0, 0.16) 26px);
+    clip-path: inherit;
+    pointer-events: none;
+}
+
+.hpBarraInferior {
+    background-image:
+        linear-gradient(180deg, rgba(12, 24, 38, 0.98) 0%, rgba(5, 10, 18, 0.99) 100%),
+        repeating-linear-gradient(90deg,
+            transparent 0,
+            transparent calc(10% - 2px),
+            rgba(150, 220, 255, 0.12) calc(10% - 2px),
+            rgba(150, 220, 255, 0.12) 10%
+        );
+}
+
+.hpPreenchimento {
+    background-image:
+        linear-gradient(90deg, #2fa85f 0%, #57d98b 45%, #9effcf 100%),
+        repeating-linear-gradient(90deg,
+            rgba(255, 255, 255, 0.04) 0,
+            rgba(255, 255, 255, 0.04) calc(10% - 2px),
+            rgba(255, 255, 255, 0.18) calc(10% - 2px),
+            rgba(255, 255, 255, 0.18) 10%
+        );
+}
+
+.hpPreenchimento::before {
+    background: repeating-linear-gradient(90deg,
+        transparent 0,
+        transparent calc(10% - 2px),
+        rgba(0, 0, 0, 0.18) calc(10% - 2px),
+        rgba(0, 0, 0, 0.18) 10%
+    );
+}
+
+.hpBarraInferior {
+    background-image: linear-gradient(180deg, rgba(12, 24, 38, 0.98) 0%, rgba(5, 10, 18, 0.99) 100%);
+}
+
+.hpPreenchimento {
+    background-image: linear-gradient(90deg, #2fa85f 0%, #57d98b 45%, #9effcf 100%);
+}
+
+.hpPreenchimento::before {
+    background: transparent;
+}

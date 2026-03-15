@@ -15,15 +15,6 @@
                 <span class="infoRotulo">Pontuacao</span>
                 <span id="infoPontuacao">0</span>
             </div>
-            <div class="divInfo divInfoHp">
-                <span class="infoRotulo">HP</span>
-                <div class="hpBox">
-                    <div id="infoHpBarra" class="hpBarra">
-                        <div id="infoHpPreenchimento" class="hpPreenchimento"></div>
-                    </div>
-                    <span id="infoHp">10/10</span>
-                </div>
-            </div>
             <div class="divInfo">
                 <span class="infoRotulo">Vidas</span>
                 <span id="infoVidas">3</span>
@@ -52,6 +43,14 @@
 
         <button id="btnInformacoesJogo" type="button">Informacoes do jogo</button>
 
+        <div id="hudHpContainer">
+            <div class="hudHpTitulo">HP da nave</div>
+            <div id="infoHpBarra" class="hpBarra hpBarraInferior">
+                <div id="infoHpPreenchimento" class="hpPreenchimento"></div>
+                <span id="infoHp" class="hpTextoInferior">10/10</span>
+            </div>
+        </div>
+
         <div id="painelEvento"></div>
 
         <div id="painelInformacoesJogo">
@@ -69,7 +68,8 @@
                     <div class="legendaLinha"><span class="swatch arma-2"></span> 2: Rajada</div>
                     <div class="legendaLinha"><span class="swatch arma-3"></span> 3: Plasma</div>
                     <div class="legendaLinha"><span class="swatch arma-4"></span> 4: Perfurante</div>
-                    <div class="legendaLinha"><span class="swatch arma-r"></span> R: Missil teleguiado</div>
+                    <div class="legendaLinha"><span class="swatch arma-r"></span> R: Missil secundario</div>
+                    <div class="legendaLinha"><span class="swatch arma-5"></span> 5: Laser de feixe</div>
                 </div>
                 <div class="painelCentralBloco">
                     <div class="painelTitulo">Power-ups</div>
@@ -77,6 +77,7 @@
                     <div class="legendaLinha"><span class="swatch power-tiro"></span> Tiro Rapido: projeteis mais velozes | Comum</div>
                     <div class="legendaLinha"><span class="swatch power-reparo"></span> Reparo: recupera 5 de HP | Incomum</div>
                     <div class="legendaLinha"><span class="swatch power-vida"></span> Vida: +1 vida instantanea | Lendario</div>
+                    <div class="legendaLinha"><span class="swatch power-missil"></span> Recarga Missil: +6 misseis | Raro</div>
                     <div class="legendaLinha"><span class="swatch power-cadencia"></span> Cadencia: atira mais rapido | Incomum</div>
                     <div class="legendaLinha"><span class="swatch power-turbo"></span> Turbo: nave mais agil | Raro</div>
                 </div>
@@ -90,6 +91,11 @@
     <script src="Assets\JS\game.js"></script>
 </body>
 </html>
+
+
+
+
+
 
 
 

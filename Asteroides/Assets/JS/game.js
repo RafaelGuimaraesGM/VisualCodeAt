@@ -59,7 +59,9 @@ const DURACAO_PARTICULA_ASTEROIDE = 0.75;
 const DURACAO_MINI_EXPLOSAO_MISSIL = 0.35;
 const DURACAO_EXPLOSAO_BOSS = 1.2;
 const HP_MAX_NAVE = 10;
-const ORDEM_DESBLOQUEIO_ARMAS = ['pulso', 'rajada', 'plasma', 'perfurante', 'missil'];
+const MAX_MISSEIS_NAVE = 20;
+const RECARGA_POWERUP_MISSIL = 6;
+const ORDEM_DESBLOQUEIO_ARMAS = ['pulso', 'rajada', 'plasma', 'perfurante'];
 
 // Configuracao das armas selecionaveis.
 const ARMAS = {
@@ -137,6 +139,21 @@ const ARMAS = {
         guiado: true,
         limiteSimultaneo: 2,
         cores: ["rgb(255, 150, 133)", "rgba(255, 88, 72, 0.96)", "rgba(255, 204, 164, 0.72)"]
+    },
+    laser: {
+        nome: "Laser",
+        tecla: "Digit5",
+        velocidade: 20,
+        raio: 4.5,
+        tempoVida: 1.2,
+        cadenciaFrames: 52,
+        tiros: 1,
+        spread: 0,
+        dano: 5,
+        perfurante: true,
+        guiado: false,
+        limiteSimultaneo: Infinity,
+        cores: ["rgb(180, 255, 255)", "rgba(64, 255, 250, 0.98)", "rgba(160, 255, 245, 0.35)"]
     }
 };
 
@@ -148,7 +165,8 @@ const TIPOS_POWERUP = {
     velocidadeNave: { nome: "Turbo", cor: "#ff9f43", pesoRaridade: 20, raridade: "Raro" },
     reparo: { nome: "Reparo", cor: "#46d47d", pesoRaridade: 24, raridade: "Incomum" },
     escudo: { nome: "Escudo", cor: "#6be7ff", pesoRaridade: 12, raridade: "Epico" },
-    vida: { nome: "Vida", cor: "#ff6b9a", pesoRaridade: 6, raridade: "Lendario" }
+    vida: { nome: "Vida", cor: "#ff6b9a", pesoRaridade: 6, raridade: "Lendario" },
+    recargaMissil: { nome: "Recarga Missil", cor: "#5ff0ff", pesoRaridade: 18, raridade: "Raro" }
 };
 
 const CLASSES_NAVES_INIMIGAS = [
@@ -252,6 +270,7 @@ let hudSecundarioTemporizadores = { asteroides: 0, velocidade: 0, arma: 0, efeit
 let animacaoDestruicaoNave = null;
 let gameOverPendente = false;
 let animacaoExplosaoBoss = null;
+let animacoesExplosaoNavesInimigas = [];
 let particulasAsteroide = [];
 let miniExplosoesMissil = [];
 let projeteisBoss = [];
@@ -263,6 +282,8 @@ let spawnNaveInimigaApos = 6;
 let bossAtual = null;
 let bossSpawnadoNaFase = false;
 let bossDerrotadoNaFase = false;
+let municaoMissil = MAX_MISSEIS_NAVE;
+let ticksMissilSecundario = ARMAS.missil.cadenciaFrames;
 
 // Estado das teclas usadas no controle.
 const comandos = { teclaA: false, teclaD: false, teclaW: false, teclaS: false, teclaSpace: false };
@@ -289,7 +310,6 @@ configurarAreaJogo();
 
 // Classe da nave do jogador.
 class Nave {
-    // Define estado inicial da nave.
     constructor(x, y) {
         this.x = x;
         this.y = y;
@@ -298,19 +318,12 @@ class Nave {
         this.raio = TAMANHO_NAVE / 2;
         this.estaAcelerando = false;
         this.compriChama = 0;
+        this.asasMissil = [-this.raio * 1.02, this.raio * 1.02];
     }
 
-    // Rotaciona a nave para a esquerda.
-    rotacionarEsq() {
-        this.angulo -= ANGULO_ROTACAO;
-    }
+    rotacionarEsq() { this.angulo -= ANGULO_ROTACAO; }
+    rotacionarDir() { this.angulo += ANGULO_ROTACAO; }
 
-    // Rotaciona a nave para a direita.
-    rotacionarDir() {
-        this.angulo += ANGULO_ROTACAO;
-    }
-
-    // Acelera a nave na direcao atual.
     acelerarAtual() {
         const aceleracao = VELOCIDADE_NAVE * obterMultiplicadorVelocidadeNave();
         this.velocidade.x += aceleracao * Math.cos(this.angulo);
@@ -320,7 +333,6 @@ class Nave {
         this.velocidade.y *= 0.99;
     }
 
-    // Aplica freio no sentido contrario.
     desacelerarAtual() {
         const freio = VELOCIDADE_NAVE * obterMultiplicadorVelocidadeNave();
         this.velocidade.x -= freio * Math.cos(this.angulo);
@@ -329,20 +341,14 @@ class Nave {
         this.velocidade.y *= 0.9;
     }
 
-    // Dispara usando a arma atualmente selecionada.
     atirar() {
         const arma = ARMAS[armaSelecionada];
         if (!arma) return;
         if (projetis.length >= MAX_PROJETEIS) return;
 
-        // Cadencia base da arma combinada com o buff temporario de tiro.
         const cadenciaAtual = Math.max(4, Math.floor(arma.cadenciaFrames * obterMultiplicadorCadencia()));
-        if (ticks < cadenciaAtual) return;
 
-        if (arma.guiado) {
-            const misseisAtivos = projetis.filter((projetil) => projetil.guiado).length;
-            if (misseisAtivos >= arma.limiteSimultaneo) return;
-        }
+        if (ticks < cadenciaAtual) return;
 
         const quantidade = Math.min(arma.tiros, MAX_PROJETEIS - projetis.length);
         for (let i = 0; i < quantidade; i++) {
@@ -362,7 +368,31 @@ class Nave {
         ticks = 0;
     }
 
-    // Volta a nave para o centro da tela.
+    atirarMissilSecundario() {
+        const arma = ARMAS.missil;
+        if (municaoMissil <= 0) {
+            mostrarMensagemTemporaria('Sem misseis!<br><small>Pegue um power-up de recarga</small>', 1800);
+            return;
+        }
+        if (ticksMissilSecundario < arma.cadenciaFrames) return;
+        const misseisAtivos = projetis.filter((projetil) => projetil.tipoArma === 'missil').length;
+        if (misseisAtivos >= arma.limiteSimultaneo) return;
+
+        const indiceLado = municaoMissil % 2 === 0 ? 0 : 1;
+        const deslocamentoLateral = this.asasMissil[indiceLado];
+        const frenteX = Math.cos(this.angulo);
+        const frenteY = Math.sin(this.angulo);
+        const lateralX = Math.cos(this.angulo + Math.PI / 2);
+        const lateralY = Math.sin(this.angulo + Math.PI / 2);
+        const origemX = this.x + frenteX * (this.raio * 0.28) + lateralX * deslocamentoLateral;
+        const origemY = this.y + frenteY * (this.raio * 0.28) + lateralY * deslocamentoLateral;
+
+        projetis.push(new Projetil(origemX, origemY, arma.velocidade * frenteX, arma.velocidade * frenteY, 'missil'));
+        municaoMissil = Math.max(0, municaoMissil - 1);
+        ticksMissilSecundario = 0;
+        atualizarInfoJogo();
+    }
+
     reiniciarPosicao() {
         this.x = telaJogo.width / 2;
         this.y = telaJogo.height / 2;
@@ -372,8 +402,7 @@ class Nave {
         this.estaAcelerando = false;
         this.compriChama = 0;
     }
-
-    // Atualiza movimento e rotacao da nave.
+    
     atualizar() {
         this.velocidade.x *= FRICCAO;
         this.velocidade.y *= FRICCAO;
@@ -392,7 +421,7 @@ class Nave {
         this.y = ajustarCoordenada(this.y, telaJogo.height);
         this.estaAcelerando = false;
     }
-    // Renderiza a nave com chama e escudo quando ativo.
+
     renderizar() {
         ctxTela.save();
         ctxTela.translate(this.x, this.y);
@@ -404,14 +433,12 @@ class Nave {
             const tamanhoChama = this.compriChama * variacao;
 
             const gradInterno = ctxTela.createRadialGradient(traseiraNave, 0, tamanhoChama * 0.05, traseiraNave, 0, tamanhoChama * 0.4);
-            gradInterno.addColorStop(0, "rgba(255, 150, 0, 0.8)");
-            gradInterno.addColorStop(1, "rgba(255, 0, 0, 0.3)");
-
+            gradInterno.addColorStop(0, 'rgba(255, 150, 0, 0.8)');
+            gradInterno.addColorStop(1, 'rgba(255, 0, 0, 0.3)');
             const gradExterno = ctxTela.createRadialGradient(traseiraNave, 0, tamanhoChama * 0.1, traseiraNave, 0, tamanhoChama * 0.4);
-            gradExterno.addColorStop(0, "rgba(255, 255, 255, 0.8)");
-            gradExterno.addColorStop(1, "rgba(255, 208, 0, 0.79)");
-
-            [[TAMANHO_NAVE / 4, 0.9, gradInterno], [TAMANHO_NAVE / 6, 0.5, gradExterno]].forEach(([altura, multiplicador, estilo]) => {
+            gradExterno.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
+            gradExterno.addColorStop(1, 'rgba(255, 208, 0, 0.79)');
+            [[TAMANHO_NAVE / 5.2, 0.62, gradInterno], [TAMANHO_NAVE / 7.4, 0.38, gradExterno]].forEach(([altura, multiplicador, estilo]) => {
                 ctxTela.beginPath();
                 ctxTela.moveTo(traseiraNave, altura);
                 ctxTela.lineTo(traseiraNave - tamanhoChama * multiplicador, 0);
@@ -423,23 +450,129 @@ class Nave {
         }
 
         ctxTela.beginPath();
-        ctxTela.moveTo(TAMANHO_NAVE / 2, 0);
-        ctxTela.lineTo(-TAMANHO_NAVE / 2, -TAMANHO_NAVE / 3);
-        ctxTela.lineTo(-TAMANHO_NAVE / 2, TAMANHO_NAVE / 3);
+        ctxTela.moveTo(this.raio * 0.3, -this.raio * 0.46);
+        ctxTela.lineTo(-this.raio * 0.14, -this.raio * 0.72);
+        ctxTela.lineTo(-this.raio * 0.86, -this.raio * 0.24);
+        ctxTela.lineTo(-this.raio * 0.18, -this.raio * 0.02);
         ctxTela.closePath();
-        ctxTela.fillStyle = "rgba(0, 0, 0, 0)";
-        ctxTela.strokeStyle = "#ff1e00";
+        ctxTela.fillStyle = 'rgba(38, 0, 0, 0.95)';
+        ctxTela.strokeStyle = '#ff1e00';
+        ctxTela.lineWidth = 1.3;
+        ctxTela.stroke();
+        ctxTela.fill();
+
+        ctxTela.beginPath();
+        ctxTela.moveTo(this.raio * 0.3, this.raio * 0.46);
+        ctxTela.lineTo(-this.raio * 0.14, this.raio * 0.72);
+        ctxTela.lineTo(-this.raio * 0.86, this.raio * 0.24);
+        ctxTela.lineTo(-this.raio * 0.18, this.raio * 0.02);
+        ctxTela.closePath();
+        ctxTela.fillStyle = 'rgba(38, 0, 0, 0.95)';
+        ctxTela.strokeStyle = '#ff1e00';
+        ctxTela.lineWidth = 1.3;
+        ctxTela.stroke();
+        ctxTela.fill();
+
+        ctxTela.beginPath();
+        ctxTela.moveTo(this.raio * 1.12, 0);
+        ctxTela.lineTo(this.raio * 0.12, -this.raio * 0.34);
+        ctxTela.lineTo(this.raio * 0.12, this.raio * 0.34);
+        ctxTela.closePath();
+        ctxTela.fillStyle = 'rgba(38, 0, 0, 0.95)';
+        ctxTela.strokeStyle = '#ff1e00';
         ctxTela.lineWidth = 1.5;
         ctxTela.stroke();
         ctxTela.fill();
-        ctxTela.restore();
 
-        // O escudo temporario desenha um anel pulsante ao redor da nave.
+        ctxTela.beginPath();
+        ctxTela.moveTo(this.raio * 0.16, -this.raio * 0.18);
+        ctxTela.lineTo(-this.raio * 0.04, -this.raio * 0.28);
+        ctxTela.lineTo(-this.raio * 0.7, -this.raio * 0.82);
+        ctxTela.lineTo(-this.raio * 0.34, -this.raio * 0.08);
+        ctxTela.closePath();
+        ctxTela.fillStyle = 'rgba(38, 0, 0, 0.95)';
+        ctxTela.strokeStyle = '#ff1e00';
+        ctxTela.lineWidth = 1.18;
+        ctxTela.stroke();
+        ctxTela.fill();
+
+        ctxTela.beginPath();
+        ctxTela.moveTo(this.raio * 0.16, this.raio * 0.18);
+        ctxTela.lineTo(-this.raio * 0.04, this.raio * 0.28);
+        ctxTela.lineTo(-this.raio * 0.7, this.raio * 0.82);
+        ctxTela.lineTo(-this.raio * 0.34, this.raio * 0.08);
+        ctxTela.closePath();
+        ctxTela.fillStyle = 'rgba(38, 0, 0, 0.95)';
+        ctxTela.strokeStyle = '#ff1e00';
+        ctxTela.lineWidth = 1.18;
+        ctxTela.stroke();
+        ctxTela.fill();
+
+        ctxTela.beginPath();
+        ctxTela.moveTo(-this.raio * 0.8, -this.raio * 0.46);
+        ctxTela.lineTo(-this.raio * 0.18, -this.raio * 0.02);
+        ctxTela.moveTo(-this.raio * 0.8, this.raio * 0.46);
+        ctxTela.lineTo(-this.raio * 0.18, this.raio * 0.02);
+        ctxTela.strokeStyle = 'rgba(255, 120, 80, 0.82)';
+        ctxTela.lineWidth = 1.14;
+        ctxTela.stroke();
+
+        const pulsoMiolo = (Math.sin(tempoJogo * 6) + 1) / 2;
+        const brilhoMiolo = 0.72 + pulsoMiolo * 0.26;
+
+        ctxTela.beginPath();
+        ctxTela.moveTo(this.raio * 0.34, 0);
+        ctxTela.lineTo(this.raio * 0.04, -this.raio * 0.14);
+        ctxTela.lineTo(-this.raio * 0.22, 0);
+        ctxTela.lineTo(this.raio * 0.04, this.raio * 0.14);
+        ctxTela.closePath();
+        ctxTela.fillStyle = 'rgba(90, 12, 12, ' + (0.82 + 0.16 * pulsoMiolo) + ')';
+        ctxTela.strokeStyle = 'rgba(255, 90, 63, ' + (0.82 + 0.18 * pulsoMiolo) + ')';
+        ctxTela.lineWidth = 1.02;
+        ctxTela.stroke();
+        ctxTela.fill();
+
+        ctxTela.beginPath();
+        ctxTela.moveTo(this.raio * 0.18, 0);
+        ctxTela.lineTo(this.raio * 0.01, -this.raio * 0.08);
+        ctxTela.lineTo(-this.raio * 0.1, 0);
+        ctxTela.lineTo(this.raio * 0.01, this.raio * 0.08);
+        ctxTela.closePath();
+        ctxTela.fillStyle = 'rgba(255, 132, 92, ' + (0.74 + 0.22 * pulsoMiolo) + ')';
+        ctxTela.fill();
+
+        ctxTela.beginPath();
+        ctxTela.moveTo(-this.raio * 0.04, -this.raio * 0.12);
+        ctxTela.lineTo(-this.raio * 0.28, -this.raio * 0.02);
+        ctxTela.lineTo(-this.raio * 0.04, this.raio * 0.12);
+        ctxTela.closePath();
+        ctxTela.strokeStyle = 'rgba(255, 84, 54, ' + (0.58 + 0.22 * pulsoMiolo) + ')';
+        ctxTela.lineWidth = 0.95;
+        ctxTela.stroke();
+
+        ctxTela.beginPath();
+        ctxTela.moveTo(this.raio * 0.08, -this.raio * 0.2);
+        ctxTela.lineTo(-this.raio * 0.02, -this.raio * 0.08);
+        ctxTela.moveTo(this.raio * 0.08, this.raio * 0.2);
+        ctxTela.lineTo(-this.raio * 0.02, this.raio * 0.08);
+        ctxTela.strokeStyle = 'rgba(255, 148, 108, ' + (0.48 + 0.22 * pulsoMiolo) + ')';
+        ctxTela.lineWidth = 0.85;
+        ctxTela.stroke();
+
+        ctxTela.beginPath();
+        ctxTela.moveTo(-this.raio * 0.22, -this.raio * 0.22);
+        ctxTela.lineTo(-this.raio * 0.44, -this.raio * 0.08);
+        ctxTela.moveTo(-this.raio * 0.22, this.raio * 0.22);
+        ctxTela.lineTo(-this.raio * 0.44, this.raio * 0.08);
+        ctxTela.strokeStyle = 'rgba(255, 92, 64, ' + (0.42 + 0.2 * pulsoMiolo) + ')';
+        ctxTela.lineWidth = 0.8;
+        ctxTela.stroke();
+        ctxTela.restore();
         const possuiEscudoPadrao = efeitosAtivos.escudo > 0;
         const possuiEscudoReinicio = efeitosAtivos.escudoReinicio > 0;
         if (possuiEscudoPadrao || possuiEscudoReinicio) {
             const pulso = 0.35 + (Math.sin(tempoJogo * 8) + 1) * 0.12;
-            const corEscudo = possuiEscudoReinicio ? "110, 255, 145" : "107, 231, 255";
+            const corEscudo = possuiEscudoReinicio ? '110, 255, 145' : '107, 231, 255';
             const baseRaio = this.raio + 8 + pulso * 4;
 
             ctxTela.beginPath();
@@ -449,7 +582,7 @@ class Nave {
             ctxTela.stroke();
 
             if (possuiEscudoReinicio) {
-                // Camada extra para dar aparencia de distorcao no anel de respawn.
+
                 ctxTela.beginPath();
                 ctxTela.ellipse(this.x, this.y, baseRaio + 5, baseRaio - 3, tempoJogo * 2.2, 0, Math.PI * 2);
                 ctxTela.strokeStyle = `rgba(180, 255, 205, ${0.24 + pulso * 0.18})`;
@@ -489,12 +622,14 @@ class Projetil {
 
         let menorDistancia = Infinity;
         let alvoMaisProximo = null;
-        const alvos = [...asteroides];
+        const alvosPrioritarios = [...navesInimigas];
         if (bossAtual) {
-            alvos.push(bossAtual);
+            alvosPrioritarios.push(bossAtual);
         }
+        const alvosSecundarios = [...asteroides];
+        const listaBusca = alvosPrioritarios.length > 0 ? alvosPrioritarios : alvosSecundarios;
 
-        alvos.forEach((alvo) => {
+        listaBusca.forEach((alvo) => {
             const distancia = Math.hypot(alvo.x - this.x, alvo.y - this.y);
             if (distancia < menorDistancia) {
                 menorDistancia = distancia;
@@ -508,7 +643,7 @@ class Projetil {
     // Atualiza deslocamento e corrige rota quando o tiro e guiado.
     atualizar(deltaTempo) {
         if (this.guiado) {
-            if (!this.alvo || (!asteroides.includes(this.alvo) && this.alvo !== bossAtual)) {
+            if (!this.alvo || (!asteroides.includes(this.alvo) && !navesInimigas.includes(this.alvo) && this.alvo !== bossAtual)) {
                 this.adquirirAlvo();
             }
 
@@ -534,6 +669,30 @@ class Projetil {
     // Desenha o projetil com a identidade visual da arma atual.
     renderizar() {
         ctxTela.save();
+
+        if (this.tipoArma === 'laser') {
+            const angulo = Math.atan2(this.vel.y, this.vel.x);
+            ctxTela.translate(this.x, this.y);
+            ctxTela.rotate(angulo);
+
+            ctxTela.beginPath();
+            ctxTela.moveTo(-18, 0);
+            ctxTela.lineTo(18, 0);
+            ctxTela.strokeStyle = 'rgba(80, 255, 245, 0.35)';
+            ctxTela.lineWidth = 10;
+            ctxTela.stroke();
+
+            ctxTela.beginPath();
+            ctxTela.moveTo(-18, 0);
+            ctxTela.lineTo(20, 0);
+            ctxTela.strokeStyle = 'rgba(190, 255, 255, 0.95)';
+            ctxTela.lineWidth = 4;
+            ctxTela.stroke();
+
+            ctxTela.restore();
+            return;
+        }
+
         const gradiente = ctxTela.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.raio);
         gradiente.addColorStop(0, this.config.cores[0]);
         gradiente.addColorStop(0.5, this.config.cores[1]);
@@ -1559,37 +1718,40 @@ function atualizarProjeteisBoss(deltaTempo) {
 
 // Aplica o efeito do power-up coletado pela nave.
 function aplicarPowerUp(tipo) {
-    ativarHudSecundario("efeitos", 4.5);
+    ativarHudSecundario('efeitos', 4.5);
     switch (tipo) {
-        case "escudo":
+        case 'escudo':
             efeitosAtivos.escudo = 8;
-            mostrarMensagemTemporaria("Escudo ativado!<br><small>Voce esta protegido por alguns segundos</small>", DURACAO_INFO_POWERUP);
+            mostrarMensagemTemporaria('Escudo ativado!<br><small>Voce esta protegido por alguns segundos</small>', DURACAO_INFO_POWERUP);
             break;
-        case "tiroVelocidade":
+        case 'tiroVelocidade':
             efeitosAtivos.tiroVelocidade = DURACAO_POWERUP;
-            mostrarMensagemTemporaria("Tiro Rapido coletado!<br><small>Projetis estao mais velozes</small>", DURACAO_INFO_POWERUP);
+            mostrarMensagemTemporaria('Tiro Rapido coletado!<br><small>Projetis estao mais velozes</small>', DURACAO_INFO_POWERUP);
             break;
-        case "reparo":
+        case 'reparo':
             hpNave = Math.min(HP_MAX_NAVE, hpNave + 5);
             mostrarMensagemTemporaria(`Reparo coletado!<br><small>HP restaurado para ${hpNave}/${HP_MAX_NAVE}</small>`, DURACAO_INFO_POWERUP);
             break;
-        case "vida":
+        case 'vida':
             vidas++;
-            mostrarMensagemTemporaria("Vida coletada!<br><small>Voce ganhou +1 vida</small>", DURACAO_INFO_POWERUP);
+            mostrarMensagemTemporaria('Vida coletada!<br><small>Voce ganhou +1 vida</small>', DURACAO_INFO_POWERUP);
             break;
-        case "cadencia":
+        case 'recargaMissil':
+            municaoMissil = Math.min(MAX_MISSEIS_NAVE, municaoMissil + RECARGA_POWERUP_MISSIL);
+            mostrarMensagemTemporaria(`Recarga de missil!<br><small>${municaoMissil}/${MAX_MISSEIS_NAVE} misseis disponiveis</small>`, DURACAO_INFO_POWERUP);
+            break;
+        case 'cadencia':
             efeitosAtivos.cadencia = DURACAO_POWERUP;
-            mostrarMensagemTemporaria("Cadencia aumentada!<br><small>Voce atira mais rapido</small>", DURACAO_INFO_POWERUP);
+            mostrarMensagemTemporaria('Cadencia aumentada!<br><small>Voce atira mais rapido</small>', DURACAO_INFO_POWERUP);
             break;
-        case "velocidadeNave":
+        case 'velocidadeNave':
             efeitosAtivos.velocidadeNave = DURACAO_POWERUP;
-            mostrarMensagemTemporaria("Turbo ativado!<br><small>A nave esta mais agil</small>", DURACAO_INFO_POWERUP);
+            mostrarMensagemTemporaria('Turbo ativado!<br><small>A nave esta mais agil</small>', DURACAO_INFO_POWERUP);
             break;
     }
 
     atualizarInfoJogo();
 }
-
 // Atualiza a contagem de tempo de cada buff temporario.
 function atualizarPowerUpsAtivos(deltaTempo) {
     Object.keys(efeitosAtivos).forEach((chave) => {
@@ -1874,6 +2036,7 @@ function renderizarEntidades() {
     navesInimigas.forEach((nave) => nave.renderizar());
     renderizarParticulasAsteroide();
     renderizarMiniExplosoesMissil();
+    renderizarExplosoesNavesInimigas();
     if (bossAtual) {
         bossAtual.renderizar();
     }
@@ -1884,7 +2047,8 @@ function renderizarEntidades() {
     }
 }
 function calcularMaxAsteroidesPorFase(fase) {
-    return 15 + (fase - 1) * 5;
+    const faseLimitada = Math.min(Math.max(fase, 1), 20);
+    return 15 + Math.floor(((faseLimitada - 1) * 25) / 19);
 }
 
 // Define quantos asteroides a fase precisa gerar no total.
@@ -1983,31 +2147,130 @@ function sortearPontoEntradaHostil() {
     return { x: Math.random() * telaJogo.width, y: telaJogo.height + margem };
 }
 function criarExplosaoNaveInimiga(nave) {
-    const quantidade = Math.max(10, Math.round(nave.raio / 2));
-    for (let i = 0; i < quantidade; i++) {
-        const angulo = Math.random() * Math.PI * 2;
-        const velocidade = 0.9 + Math.random() * (nave.raio / 16);
-        const tempoMax = 0.45 + Math.random() * 0.35;
-        particulasAsteroide.push({
-            x: nave.x,
-            y: nave.y,
-            velX: Math.cos(angulo) * velocidade,
-            velY: Math.sin(angulo) * velocidade,
-            raio: 1.2 + Math.random() * 2.2,
-            tempoVida: tempoMax,
-            tempoMax,
-            cor: nave.classe.corBorda
-        });
+    const configuracoes = {
+        interceptora: {
+            estilo: 'pulso',
+            interna: '255, 230, 166',
+            externa: '255, 143, 76',
+            duracao: 0.62,
+            raio: 28,
+            fragmentos: 14,
+            multiplicadorDistancia: 1.45
+        },
+        artilheira: {
+            estilo: 'plasma',
+            interna: '255, 178, 240',
+            externa: '255, 88, 196',
+            duracao: 0.86,
+            raio: 34,
+            fragmentos: 18,
+            multiplicadorDistancia: 1.75
+        },
+        fantasma: {
+            estilo: 'orbita',
+            interna: '174, 255, 236',
+            externa: '88, 255, 212',
+            duracao: 0.98,
+            raio: 32,
+            fragmentos: 16,
+            multiplicadorDistancia: 1.6
+        },
+        aniquiladora: {
+            estilo: 'lanca',
+            interna: '255, 224, 176',
+            externa: '255, 166, 92',
+            duracao: 1.08,
+            raio: 40,
+            fragmentos: 22,
+            multiplicadorDistancia: 2
+        }
+    };
+    const config = configuracoes[nave.classe.perfil] || configuracoes.interceptora;
+    animacoesExplosaoNavesInimigas.push({
+        x: nave.x,
+        y: nave.y,
+        tempoVida: config.duracao,
+        tempoMax: config.duracao,
+        estilo: config.estilo,
+        cores: { interna: config.interna, externa: config.externa },
+        raioBase: config.raio,
+        fragmentos: Array.from({ length: config.fragmentos + Math.round(nave.raio / 4) }, () => ({
+            angulo: Math.random() * Math.PI * 2,
+            distancia: 16 + Math.random() * (nave.raio * config.multiplicadorDistancia),
+            raio: 1.4 + Math.random() * (nave.classe.perfil === 'aniquiladora' ? 3.4 : 2.4)
+        }))
+    });
+}
+function atualizarExplosoesNavesInimigas(deltaTempo) {
+    for (let i = animacoesExplosaoNavesInimigas.length - 1; i >= 0; i--) {
+        animacoesExplosaoNavesInimigas[i].tempoVida -= deltaTempo;
+        if (animacoesExplosaoNavesInimigas[i].tempoVida <= 0) {
+            animacoesExplosaoNavesInimigas.splice(i, 1);
+        }
     }
 }
+
+function renderizarExplosoesNavesInimigas() {
+    animacoesExplosaoNavesInimigas.forEach((explosao) => {
+        const progresso = 1 - (explosao.tempoVida / explosao.tempoMax);
+        const alpha = Math.max(0, 1 - progresso);
+        const raio = explosao.raioBase + progresso * (explosao.estilo === 'lanca' ? 40 : explosao.estilo === 'plasma' ? 34 : 28);
+
+        ctxTela.save();
+        ctxTela.translate(explosao.x, explosao.y);
+
+        ctxTela.beginPath();
+        ctxTela.arc(0, 0, raio * 0.52, 0, Math.PI * 2);
+        ctxTela.fillStyle = `rgba(${explosao.cores.interna}, ${alpha * 0.46})`;
+        ctxTela.fill();
+
+        ctxTela.beginPath();
+        ctxTela.arc(0, 0, raio, 0, Math.PI * 2);
+        ctxTela.strokeStyle = `rgba(${explosao.cores.externa}, ${alpha * 0.82})`;
+        ctxTela.lineWidth = explosao.estilo === 'lanca' ? 4 : 3;
+        ctxTela.stroke();
+
+        if (explosao.estilo === 'orbita') {
+            ctxTela.beginPath();
+            ctxTela.ellipse(0, 0, raio * 1.26, raio * 0.5, progresso * 1.8, 0, Math.PI * 2);
+            ctxTela.strokeStyle = `rgba(220, 255, 245, ${alpha * 0.5})`;
+            ctxTela.lineWidth = 1.5;
+            ctxTela.stroke();
+        }
+
+        if (explosao.estilo === 'plasma') {
+            ctxTela.beginPath();
+            ctxTela.arc(0, 0, raio * 0.32, 0, Math.PI * 2);
+            ctxTela.fillStyle = `rgba(255, 230, 250, ${alpha * 0.72})`;
+            ctxTela.fill();
+        }
+
+        explosao.fragmentos.forEach((fragmento) => {
+            const distancia = progresso * fragmento.distancia;
+            const px = Math.cos(fragmento.angulo) * distancia;
+            const py = Math.sin(fragmento.angulo) * distancia;
+            ctxTela.beginPath();
+            ctxTela.arc(px, py, Math.max(0.8, fragmento.raio - progresso * 2), 0, Math.PI * 2);
+            ctxTela.fillStyle = `rgba(${explosao.cores.externa}, ${alpha * 0.92})`;
+            ctxTela.fill();
+        });
+
+        ctxTela.restore();
+    });
+}
+
 function destruirNaveInimiga(indice, porColisao = false) {
     const nave = navesInimigas[indice];
     if (!nave) return;
     pontuacao += nave.pontos;
     criarExplosaoNaveInimiga(nave);
     navesInimigas.splice(indice, 1);
+    if (navesInimigasRestantesFase > 0) {
+        spawnNaveInimigaApos = tempoFase + 3.5;
+    }
     ativarHudSecundario('asteroides', porColisao ? 2.8 : 3.6);
 }
+
 function criarNaveInimigaDaFase() {
     if (navesInimigasRestantesFase <= 0) return;
     const nave = new NaveInimiga(faseAtual);
@@ -2016,6 +2279,7 @@ function criarNaveInimigaDaFase() {
     ativarHudSecundario('asteroides', 4);
     mostrarMensagemTemporaria(`Nave ${nave.classe.nome} detectada!<br><small>Elimine a ameaca inimiga</small>`, DURACAO_INFO_EVENTO);
 }
+
 function atualizarNavesInimigas(deltaTempo) {
     navesInimigas.forEach((nave) => nave.atualizar(deltaTempo));
     if (faseAtual < 10 || faseEmTransicao || bossAtual) return;
@@ -2023,8 +2287,9 @@ function atualizarNavesInimigas(deltaTempo) {
     if (navesInimigas.length > 0) return;
     if (navesInimigasRestantesFase <= 0) return;
     criarNaveInimigaDaFase();
-    spawnNaveInimigaApos = tempoFase + 3.2;
+    spawnNaveInimigaApos = tempoFase + 3.5;
 }
+
 function ajustarCoordenada(valor, limite) {
     if (valor < 0) return limite;
     if (valor > limite) return 0;
@@ -2078,7 +2343,7 @@ function atualizarVisibilidadeHudSecundario(deltaTempo = 0) {
     const velocidadeAtual = espaconave ? Math.hypot(espaconave.velocidade.x, espaconave.velocidade.y) : 0;
     const mostrarVelocidade = hudSecundarioTemporizadores.velocidade > 0 || velocidadeAtual > 0.08 || comandos.teclaW || comandos.teclaS;
     const mostrarAsteroides = hudSecundarioTemporizadores.asteroides > 0 || faseEmTransicao || bossAtual || navesInimigas.length > 0;
-    const mostrarArma = hudSecundarioTemporizadores.arma > 0;
+    const mostrarArma = true;
     const mostrarEfeitos = hudSecundarioTemporizadores.efeitos > 0 || Object.values(efeitosAtivos).some((valor) => valor > 0);
 
     if (hudVelocidadeSecundario) hudVelocidadeSecundario.classList.toggle("ativa", mostrarVelocidade);
@@ -2090,9 +2355,9 @@ function atualizarVisibilidadeHudSecundario(deltaTempo = 0) {
 // Atualiza no HUD o nome da arma selecionada.
 function atualizarInfoArma() {
     if (!armaEstaDesbloqueada(armaSelecionada)) {
-        armaSelecionada = obterArmasDesbloqueadas()[0];
+        armaSelecionada = obterArmasDesbloqueadas().includes('pulso') ? 'pulso' : obterArmasDesbloqueadas()[0];
     }
-    infoArma.textContent = ARMAS[armaSelecionada].nome;
+    infoArma.textContent = ARMAS[armaSelecionada].nome + ' | M ' + municaoMissil + '/' + MAX_MISSEIS_NAVE;
 }
 
 // Atualiza no HUD a lista de efeitos temporarios ativos.
@@ -2105,9 +2370,14 @@ function atualizarInfoEfeitos() {
     if (efeitosAtivos.velocidadeNave > 0) ativos.push(`Turbo ${efeitosAtivos.velocidadeNave.toFixed(1)}s`);
     infoEfeitos.textContent = ativos.length > 0 ? ativos.join(" | ") : "Nenhum";
 }
+
 function obterArmasDesbloqueadas(fase = faseAtual) {
-    const quantidade = Math.min(ORDEM_DESBLOQUEIO_ARMAS.length, 1 + Math.floor((fase - 1) / 2));
-    return ORDEM_DESBLOQUEIO_ARMAS.slice(0, quantidade);
+    const quantidadeBase = Math.min(5, 1 + Math.floor((fase - 1) / 2));
+    const armas = ORDEM_DESBLOQUEIO_ARMAS.slice(0, quantidadeBase);
+    if (fase >= 10 && !armas.includes('laser')) {
+        armas.push('laser');
+    }
+    return armas;
 }
 
 function armaEstaDesbloqueada(chaveArma, fase = faseAtual) {
@@ -2115,6 +2385,7 @@ function armaEstaDesbloqueada(chaveArma, fase = faseAtual) {
 }
 
 function obterArmaDesbloqueadaNaFase(fase = faseAtual) {
+    if (fase === 10) return 'laser';
     if (fase <= 1 || fase % 2 === 0) return null;
     return ORDEM_DESBLOQUEIO_ARMAS[Math.floor((fase - 1) / 2)] || null;
 }
@@ -2298,7 +2569,9 @@ function prepararFase(fase) {
     powerUps = [];
     particulasAsteroide = [];
     miniExplosoesMissil = [];
+    animacoesExplosaoNavesInimigas = [];
     navesInimigas = [];
+
     bossAtual = null;
     animacaoExplosaoBoss = null;
     bossSpawnadoNaFase = false;
@@ -2387,8 +2660,8 @@ function aplicarDanoNoBoss(projetil, indiceProjetil) {
     if (!bossAtual) return;
 
     bossAtual.vida -= projetil.dano;
-    if (projetil.guiado) {
-        criarMiniExplosaoMissil(projetil.x, projetil.y, 22);
+    if (projetil.guiado || projetil.tipoArma === 'laser') {
+        criarMiniExplosaoMissil(projetil.x, projetil.y, projetil.tipoArma === 'laser' ? 28 : 22);
     }
 
     if (!projetil.perfurante) {
@@ -2495,6 +2768,24 @@ function verificarColisoes() {
         const projetil = projetis[i];
         let acertou = false;
 
+        for (let j = projeteisBoss.length - 1; j >= 0; j--) {
+            const projetilBossAtual = projeteisBoss[j];
+            if (projetilBossAtual.estilo !== 'missil') continue;
+            if (Math.hypot(projetil.x - projetilBossAtual.x, projetil.y - projetilBossAtual.y) <= projetil.raio + projetilBossAtual.raio) {
+                projeteisBoss.splice(j, 1);
+                criarMiniExplosaoMissil(projetilBossAtual.x, projetilBossAtual.y, 18);
+                if (!projetil.perfurante) {
+                    projetis.splice(i, 1);
+                }
+                acertou = true;
+                break;
+            }
+        }
+
+        if (acertou) {
+            continue;
+        }
+
         for (let j = asteroides.length - 1; j >= 0; j--) {
             const asteroide = asteroides[j];
             if (asteroide.colideComCirculo(projetil.x, projetil.y, projetil.raio)) {
@@ -2509,7 +2800,7 @@ function verificarColisoes() {
                 const nave = navesInimigas[j];
                 if (nave.colideComCirculo(projetil.x, projetil.y, projetil.raio)) {
                     nave.receberDano(projetil.dano);
-                    if (projetil.guiado) criarMiniExplosaoMissil(projetil.x, projetil.y, 16);
+                    if (projetil.guiado || projetil.tipoArma === 'laser') criarMiniExplosaoMissil(projetil.x, projetil.y, projetil.tipoArma === 'laser' ? 22 : 16);
                     if (!projetil.perfurante) projetis.splice(i, 1);
                     if (nave.vida <= 0) destruirNaveInimiga(j);
                     acertou = true;
@@ -2550,6 +2841,9 @@ function verificarColisoes() {
         const projetil = projeteisBoss[i];
         if (Math.hypot(projetil.x - espaconave.x, projetil.y - espaconave.y) <= projetil.raio + espaconave.raio * 0.7) {
             projeteisBoss.splice(i, 1);
+            if (projetil.estilo === 'missil') {
+                criarMiniExplosaoMissil(projetil.x, projetil.y, 18);
+            }
             aplicarDanoDeTiroNaNave(projetil.dano);
             break;
         }
@@ -2576,9 +2870,13 @@ function verificarProgressoFase() {
 // Atualiza pontuacao, vidas, fase, velocidade, contador e arma no HUD.
 function atualizarInfoJogo() {
     infoPontuacao.textContent = pontuacao;
-    infoVidas.textContent = vidas;
+
     if (infoHp) infoHp.textContent = `${hpNave}/${HP_MAX_NAVE}`;
-    if (infoHpPreenchimento) infoHpPreenchimento.style.width = `${(hpNave / HP_MAX_NAVE) * 100}%`;
+    if (infoHpPreenchimento) {
+        const percentualHp = (hpNave / HP_MAX_NAVE) * 100;
+        infoHpPreenchimento.style.width = `${percentualHp}%`;
+        infoHpPreenchimento.style.background = percentualHp <= 30 ? 'linear-gradient(90deg, #ff4d6d 0%, #ff7b54 100%)' : percentualHp <= 60 ? 'linear-gradient(90deg, #ffb347 0%, #ffd166 100%)' : 'linear-gradient(90deg, #46d47d 0%, #7fffd4 100%)';
+    }
     infoVelocidade.textContent = Math.round(Math.sqrt(espaconave.velocidade.x ** 2 + espaconave.velocidade.y ** 2) * 5000);
     infoFase.textContent = faseAtual;
     if (bossAtual) {
@@ -2630,7 +2928,9 @@ function executarGameOver() {
     powerUps = [];
     particulasAsteroide = [];
     miniExplosoesMissil = [];
+    animacoesExplosaoNavesInimigas = [];
     navesInimigas = [];
+
     bossAtual = null;
     animacaoExplosaoBoss = null;
     espaconave.velocidade.x = 0;
@@ -2669,7 +2969,10 @@ function reiniciarJogo() {
     powerUps = [];
     particulasAsteroide = [];
     miniExplosoesMissil = [];
+    animacoesExplosaoNavesInimigas = [];
     navesInimigas = [];
+    municaoMissil = MAX_MISSEIS_NAVE;
+    ticksMissilSecundario = ARMAS.missil.cadenciaFrames;
     bossAtual = null;
     animacaoExplosaoBoss = null;
     bossSpawnadoNaFase = false;
@@ -2761,9 +3064,11 @@ function executarLoop() {
     atualizarAnimacaoDestruicaoNave(deltaTempo);
     atualizarPowerUps(deltaTempo);
     atualizarProjetis(deltaTempo);
+    ticksMissilSecundario++;
     atualizarProjeteisBoss(deltaTempo);
     atualizarParticulasAsteroide(deltaTempo);
     atualizarMiniExplosoesMissil(deltaTempo);
+    atualizarExplosoesNavesInimigas(deltaTempo);
     atualizarExplosaoBoss(deltaTempo);
     atualizarBoss(deltaTempo);
     atualizarNavesInimigas(deltaTempo);
@@ -2791,42 +3096,47 @@ function executarLoop() {
 }
 
 // Evento de tecla pressionada.
-document.addEventListener("keydown", (tecla) => {
-    if (tecla.code === "KeyF" && painelInformacoesAberto) {
+document.addEventListener('keydown', (tecla) => {
+    if (tecla.code === 'KeyF' && painelInformacoesAberto) {
         alternarPainelInformacoesJogo(false);
         return;
     }
 
-    if (tecla.code === "Escape") {
+    if (tecla.code === 'Escape') {
         alternarPause();
         return;
     }
 
-    if (jogoAcabou && tecla.code === "Enter") {
+    if (jogoAcabou && tecla.code === 'Enter') {
         reiniciarJogo();
         return;
     }
 
     if (jogoPausado || painelInformacoesAberto) return;
 
+    if (tecla.code === ARMAS.missil.tecla) {
+        espaconave.atirarMissilSecundario();
+        return;
+    }
+
     if (selecionarArmaPorTecla(tecla.code)) {
         return;
     }
 
     switch (tecla.code) {
-        case "KeyA":
+        case 'KeyA':
             comandos.teclaA = true;
             break;
-        case "KeyD":
+        case 'KeyD':
             comandos.teclaD = true;
             break;
-        case "KeyW":
+        case 'KeyW':
             comandos.teclaW = true;
             break;
-        case "KeyS":
+        case 'KeyS':
             comandos.teclaS = true;
             break;
-        case "Space":
+        case 'Space':
             comandos.teclaSpace = true;
             break;
     }
