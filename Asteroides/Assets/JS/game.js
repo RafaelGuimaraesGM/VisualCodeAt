@@ -250,6 +250,7 @@ let painelInformacoesAberto = false;
 let estrelas = [];
 let planetasFundo = [];
 let galaxiasFundo = [];
+let nebulosasFundo = [];
 let deslocamentoParallaxNave = { x: 0, y: 0 };
 let projetis = [];
 let asteroides = [];
@@ -518,7 +519,7 @@ class Nave {
         ctxTela.stroke();
 
         const pulsoMiolo = (Math.sin(tempoJogo * 6) + 1) / 2;
-        const brilhoMiolo = 0.72 + pulsoMiolo * 0.26;
+        const brilhoMiolo = 0.82 + pulsoMiolo * 0.4;
 
         ctxTela.beginPath();
         ctxTela.moveTo(this.raio * 0.34, 0);
@@ -526,8 +527,8 @@ class Nave {
         ctxTela.lineTo(-this.raio * 0.22, 0);
         ctxTela.lineTo(this.raio * 0.04, this.raio * 0.14);
         ctxTela.closePath();
-        ctxTela.fillStyle = 'rgba(90, 12, 12, ' + (0.82 + 0.16 * pulsoMiolo) + ')';
-        ctxTela.strokeStyle = 'rgba(255, 90, 63, ' + (0.82 + 0.18 * pulsoMiolo) + ')';
+        ctxTela.fillStyle = 'rgba(110, 16, 16, ' + (0.84 + 0.22 * pulsoMiolo) + ')';
+        ctxTela.strokeStyle = 'rgba(255, 106, 72, ' + (0.88 + 0.28 * pulsoMiolo) + ')';
         ctxTela.lineWidth = 1.02;
         ctxTela.stroke();
         ctxTela.fill();
@@ -538,7 +539,7 @@ class Nave {
         ctxTela.lineTo(-this.raio * 0.1, 0);
         ctxTela.lineTo(this.raio * 0.01, this.raio * 0.08);
         ctxTela.closePath();
-        ctxTela.fillStyle = 'rgba(255, 132, 92, ' + (0.74 + 0.22 * pulsoMiolo) + ')';
+        ctxTela.fillStyle = 'rgba(255, 146, 104, ' + (0.8 + 0.3 * pulsoMiolo) + ')';
         ctxTela.fill();
 
         ctxTela.beginPath();
@@ -546,7 +547,7 @@ class Nave {
         ctxTela.lineTo(-this.raio * 0.28, -this.raio * 0.02);
         ctxTela.lineTo(-this.raio * 0.04, this.raio * 0.12);
         ctxTela.closePath();
-        ctxTela.strokeStyle = 'rgba(255, 84, 54, ' + (0.58 + 0.22 * pulsoMiolo) + ')';
+        ctxTela.strokeStyle = 'rgba(255, 98, 68, ' + (0.66 + 0.3 * pulsoMiolo) + ')';
         ctxTela.lineWidth = 0.95;
         ctxTela.stroke();
 
@@ -555,7 +556,7 @@ class Nave {
         ctxTela.lineTo(-this.raio * 0.02, -this.raio * 0.08);
         ctxTela.moveTo(this.raio * 0.08, this.raio * 0.2);
         ctxTela.lineTo(-this.raio * 0.02, this.raio * 0.08);
-        ctxTela.strokeStyle = 'rgba(255, 148, 108, ' + (0.48 + 0.22 * pulsoMiolo) + ')';
+        ctxTela.strokeStyle = 'rgba(255, 164, 120, ' + (0.56 + 0.3 * pulsoMiolo) + ')';
         ctxTela.lineWidth = 0.85;
         ctxTela.stroke();
 
@@ -564,7 +565,7 @@ class Nave {
         ctxTela.lineTo(-this.raio * 0.44, -this.raio * 0.08);
         ctxTela.moveTo(-this.raio * 0.22, this.raio * 0.22);
         ctxTela.lineTo(-this.raio * 0.44, this.raio * 0.08);
-        ctxTela.strokeStyle = 'rgba(255, 92, 64, ' + (0.42 + 0.2 * pulsoMiolo) + ')';
+        ctxTela.strokeStyle = 'rgba(255, 108, 74, ' + (0.5 + 0.28 * pulsoMiolo) + ')';
         ctxTela.lineWidth = 0.8;
         ctxTela.stroke();
         ctxTela.restore();
@@ -1781,10 +1782,15 @@ function atualizarPowerUps(deltaTempo) {
 
 // Garante vida extra automatica sempre que cruza novo marco de pontuacao.
 function verificarVidaExtra() {
+    let ganhouVida = false;
     while (pontuacao >= proximaVidaExtra) {
         vidas++;
         proximaVidaExtra += PONTOS_PARA_VIDA_EXTRA;
+        ganhouVida = true;
         mostrarMensagemTemporaria(`Vida extra conquistada!<br><small>${vidas} vidas disponiveis</small>`, DURACAO_INFO_POWERUP);
+    }
+    if (ganhouVida) {
+        atualizarInfoJogo();
     }
 }
 
@@ -1838,6 +1844,26 @@ function criarGalaxiasDaFase(fase) {
         profundidade: 0.05 + Math.random() * 0.08
     }];
 }
+function criarNebulosasDaFase(fase) {
+    const paleta = obterPaletaEspacialDaFase(fase);
+    const quantidade = 1 + Math.floor(Math.random() * 2);
+    nebulosasFundo = Array.from({ length: quantidade }, (_, indice) => {
+        const cores = paleta.planetas[indice % paleta.planetas.length];
+        return {
+            x: Math.random() * telaJogo.width,
+            y: Math.random() * telaJogo.height * 0.85,
+            raioX: 90 + Math.random() * 110,
+            raioY: 48 + Math.random() * 75,
+            corA: cores[0],
+            corB: paleta.galaxia[indice % paleta.galaxia.length],
+            profundidade: 0.03 + Math.random() * 0.018,
+            angulo: Math.random() * Math.PI,
+            lobos: 3 + Math.floor(Math.random() * 3),
+            ruido: 0.18 + Math.random() * 0.2
+        };
+    });
+}
+
 
 function criarPlanetasDaFase(fase) {
     const paleta = obterPaletaEspacialDaFase(fase);
@@ -1866,6 +1892,7 @@ function criarPlanetasDaFase(fase) {
 function criarCenarioEspacialDaFase(fase = faseAtual) {
     criarEstrelas();
     criarGalaxiasDaFase(fase);
+    criarNebulosasDaFase(fase);
     criarPlanetasDaFase(fase);
 }
 
@@ -1896,6 +1923,7 @@ function renderEstrelas() {
     const offsetX = deslocamentoParallaxNave.x;
     const offsetY = deslocamentoParallaxNave.y;
 
+
     galaxiasFundo.forEach((galaxia) => {
         let x = galaxia.x - offsetX * galaxia.profundidade;
         let y = galaxia.y - offsetY * galaxia.profundidade;
@@ -1916,6 +1944,40 @@ function renderEstrelas() {
         ctxTela.restore();
     });
 
+    nebulosasFundo.forEach((nebulosa) => {
+        let x = nebulosa.x - offsetX * nebulosa.profundidade;
+        let y = nebulosa.y - offsetY * nebulosa.profundidade;
+        x = ((x % telaJogo.width) + telaJogo.width) % telaJogo.width;
+        y = ((y % telaJogo.height) + telaJogo.height) % telaJogo.height;
+
+        ctxTela.save();
+        ctxTela.translate(x, y);
+        ctxTela.rotate(nebulosa.angulo + tempoJogo * 0.01);
+
+        for (let i = 0; i < nebulosa.lobos; i++) {
+            const anguloLobo = (Math.PI * 2 / nebulosa.lobos) * i;
+            const offsetLoboX = Math.cos(anguloLobo) * nebulosa.raioX * 0.18;
+            const offsetLoboY = Math.sin(anguloLobo) * nebulosa.raioY * 0.22;
+            const deformacao = 1 + Math.sin(tempoJogo * 0.12 + i + nebulosa.angulo) * nebulosa.ruido;
+            const gradienteNebulosa = ctxTela.createRadialGradient(
+                offsetLoboX * 0.35,
+                offsetLoboY * 0.35,
+                nebulosa.raioY * 0.08,
+                offsetLoboX,
+                offsetLoboY,
+                nebulosa.raioX * deformacao
+            );
+            gradienteNebulosa.addColorStop(0, `rgba(${nebulosa.corA}, 0.16)`);
+            gradienteNebulosa.addColorStop(0.45, `rgba(${nebulosa.corB}, 0.1)`);
+            gradienteNebulosa.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctxTela.fillStyle = gradienteNebulosa;
+            ctxTela.beginPath();
+            ctxTela.ellipse(offsetLoboX, offsetLoboY, nebulosa.raioX * 0.52 * deformacao, nebulosa.raioY * 0.52 * deformacao, anguloLobo * 0.35, 0, Math.PI * 2);
+            ctxTela.fill();
+        }
+
+        ctxTela.restore();
+    });
     planetasFundo.forEach((planeta) => {
         let x = planeta.x - offsetX * planeta.profundidade;
         let y = planeta.y - offsetY * planeta.profundidade;
@@ -2058,7 +2120,22 @@ function calcularTotalAsteroidesDaFase(fase) {
 
 function calcularTotalNavesInimigasFase(fase) {
     if (fase < 10) return 0;
-    return Math.min(5, 1 + (fase - 10));
+    return Math.min(20, 5 + (fase - 10));
+}
+
+function calcularMaxNavesInimigasEmTela(fase) {
+    if (fase < 10) return 0;
+    return 5;
+}
+
+function sortearQuantidadeSpawnNaves(maximoPossivel) {
+    let quantidade = 1;
+    for (let i = 1; i < maximoPossivel; i++) {
+        if (Math.random() < 0.38) {
+            quantidade++;
+        }
+    }
+    return quantidade;
 }
 
 // Quantidade inicial que ja nasce em tela no inicio da fase.
@@ -2201,6 +2278,7 @@ function criarExplosaoNaveInimiga(nave) {
         }))
     });
 }
+
 function atualizarExplosoesNavesInimigas(deltaTempo) {
     for (let i = animacoesExplosaoNavesInimigas.length - 1; i >= 0; i--) {
         animacoesExplosaoNavesInimigas[i].tempoVida -= deltaTempo;
@@ -2262,31 +2340,54 @@ function renderizarExplosoesNavesInimigas() {
 function destruirNaveInimiga(indice, porColisao = false) {
     const nave = navesInimigas[indice];
     if (!nave) return;
+
     pontuacao += nave.pontos;
     criarExplosaoNaveInimiga(nave);
     navesInimigas.splice(indice, 1);
-    if (navesInimigasRestantesFase > 0) {
+    verificarVidaExtra();
+    atualizarInfoJogo();
+
+    if (navesInimigasRestantesFase > 0 && navesInimigas.length === 0) {
         spawnNaveInimigaApos = tempoFase + 3.5;
     }
+
     ativarHudSecundario('asteroides', porColisao ? 2.8 : 3.6);
 }
 
 function criarNaveInimigaDaFase() {
-    if (navesInimigasRestantesFase <= 0) return;
+    if (navesInimigasRestantesFase <= 0) return null;
     const nave = new NaveInimiga(faseAtual);
     navesInimigas.push(nave);
     navesInimigasRestantesFase--;
-    ativarHudSecundario('asteroides', 4);
-    mostrarMensagemTemporaria(`Nave ${nave.classe.nome} detectada!<br><small>Elimine a ameaca inimiga</small>`, DURACAO_INFO_EVENTO);
+    return nave;
 }
 
 function atualizarNavesInimigas(deltaTempo) {
     navesInimigas.forEach((nave) => nave.atualizar(deltaTempo));
     if (faseAtual < 10 || faseEmTransicao || bossAtual) return;
     if (tempoFase < spawnNaveInimigaApos) return;
-    if (navesInimigas.length > 0) return;
     if (navesInimigasRestantesFase <= 0) return;
-    criarNaveInimigaDaFase();
+    if (navesInimigas.length > 0) return;
+
+    const espacosDisponiveis = calcularMaxNavesInimigasEmTela(faseAtual) - navesInimigas.length;
+    if (espacosDisponiveis <= 0) return;
+
+    const quantidadeSpawn = sortearQuantidadeSpawnNaves(Math.min(espacosDisponiveis, navesInimigasRestantesFase));
+    let primeiraNave = null;
+
+    for (let i = 0; i < quantidadeSpawn; i++) {
+        const nave = criarNaveInimigaDaFase();
+        if (!primeiraNave) primeiraNave = nave;
+    }
+
+    if (primeiraNave) {
+        ativarHudSecundario('asteroides', 4);
+        const mensagem = quantidadeSpawn > 1
+            ? `Esquadra inimiga detectada!<br><small>${quantidadeSpawn} naves hostis entraram na batalha</small>`
+            : `Nave ${primeiraNave.classe.nome} detectada!<br><small>Elimine a ameaca inimiga</small>`;
+        mostrarMensagemTemporaria(mensagem, DURACAO_INFO_EVENTO);
+    }
+
     spawnNaveInimigaApos = tempoFase + 3.5;
 }
 
@@ -2570,7 +2671,6 @@ function prepararFase(fase) {
     particulasAsteroide = [];
     miniExplosoesMissil = [];
     animacoesExplosaoNavesInimigas = [];
-    navesInimigas = [];
 
     bossAtual = null;
     animacaoExplosaoBoss = null;
@@ -2732,10 +2832,12 @@ function concluirRenascimentoNave() {
     }
 
     espaconave.reiniciarPosicao();
+    hpNave = HP_MAX_NAVE;
     efeitosAtivos.escudoReinicio = DURACAO_ESCUDO_RENASCIMENTO;
     hudSecundarioTemporizadores.efeitos = Math.max(hudSecundarioTemporizadores.efeitos, DURACAO_ESCUDO_RENASCIMENTO);
     animacaoDestruicaoNave = null;
     resetarComandos();
+    atualizarInfoJogo();
 }
 
 function atualizarAnimacaoDestruicaoNave(deltaTempo) {
@@ -2871,6 +2973,7 @@ function verificarProgressoFase() {
 function atualizarInfoJogo() {
     infoPontuacao.textContent = pontuacao;
 
+    if (infoVidas) infoVidas.textContent = vidas;
     if (infoHp) infoHp.textContent = `${hpNave}/${HP_MAX_NAVE}`;
     if (infoHpPreenchimento) {
         const percentualHp = (hpNave / HP_MAX_NAVE) * 100;
@@ -2896,17 +2999,16 @@ function atualizarInfoJogo() {
 function perderVida() {
     if (jogoAcabou || animacaoDestruicaoNave) return;
 
-    hpNave = HP_MAX_NAVE;
     vidas = Math.max(vidas - 1, 0);
     atualizarInfoJogo();
 
     if (vidas <= 0) {
         gameOverPendente = true;
-        iniciarAnimacaoDestruicaoNave();
-    } else {
-        iniciarAnimacaoDestruicaoNave();
     }
+
+    iniciarAnimacaoDestruicaoNave();
 }
+
 
 // Mostra mensagens centrais na tela.
 function exibirMensagem(texto) {
@@ -2929,7 +3031,6 @@ function executarGameOver() {
     particulasAsteroide = [];
     miniExplosoesMissil = [];
     animacoesExplosaoNavesInimigas = [];
-    navesInimigas = [];
 
     bossAtual = null;
     animacaoExplosaoBoss = null;
@@ -2970,7 +3071,6 @@ function reiniciarJogo() {
     particulasAsteroide = [];
     miniExplosoesMissil = [];
     animacoesExplosaoNavesInimigas = [];
-    navesInimigas = [];
     municaoMissil = MAX_MISSEIS_NAVE;
     ticksMissilSecundario = ARMAS.missil.cadenciaFrames;
     bossAtual = null;
