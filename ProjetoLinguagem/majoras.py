@@ -12,7 +12,6 @@ import io
 from turtle import left, right
 from unicodedata import name
 
-from colorama import init
 
 THEMES = {
     "Dark (Padrão)": {
@@ -29,6 +28,7 @@ THEMES = {
     }
     
 }
+
 CURRENT_THEME = "Dark (Padrão)" # Tema inicial
 
 ###############################################
